@@ -21,7 +21,7 @@ def get_location(id):
 def get_user_location(uuid):
     try:
         print(uuid)
-        oid = ObjectId(uuid['id'])
+        oid = ObjectId(uuid)
         print(oid)
         user = users.find_one({"_id": oid})
         print(f"found user {user}")
@@ -43,7 +43,7 @@ def get_random_location():
 def check_code(code, uuid):
     print(f'checking code {code}')
     try:
-        user = users.find_one({"_id": ObjectId(uuid['id'])})
+        user = users.find_one({"_id": ObjectId(uuid)})
         if(user != None):
             if(locations.find_one({"id": user["location"]})["code"] == code):
                 print(f"code {code} is correct, selecting new location")
@@ -65,8 +65,7 @@ def log_in(email):
     try:
         user = users.find_one({"email": email})
         if(user != None):
-            uuid = { "id": str(user["_id"])}
-            return {"status": "success", "uuid": uuid}
+            return {"status": "success", "uuid": str(user["_id"])}
         else:
             users.insert_one({"email": email, "location": 1})
             user = users.find_one({"email": email})
@@ -79,7 +78,7 @@ def log_in(email):
 
 def get_user(uuid):
     try:
-        user = users.find_one({"_id": ObjectId(uuid['id'])})
+        user = users.find_one({"_id": ObjectId(uuid)})
         return({"status": "success", "user": user})
     except Exception as e:
         print(e)
@@ -87,7 +86,7 @@ def get_user(uuid):
 
 def set_location(uuid, lid):
     try:
-        users.update_one({"_id": ObjectId(uuid['id'])},{"$set":{"location":lid}})
+        users.update_one({"_id": ObjectId(uuid)},{"$set":{"location":lid}})
         return({"status": "success"})
     except Exception as e:
         print(e)
