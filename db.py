@@ -1,15 +1,36 @@
 import pymongo
 from pymongo import MongoClient
 import random
+from bson.objectid import ObjectId
+from datetime import date, datetime
+from haversine import haversine, Unit
 
 client = MongoClient("localhost", 27017)
 
 db = client["scavengerHunt"]
 
+hat_urls = [
+    "https://cdn.discordapp.com/attachments/820148747882332180/844039682882535424/image4.png",
+    "https://cdn.discordapp.com/attachments/820148747882332180/844039682651455539/image3.png",
+    "https://cdn.discordapp.com/attachments/820148747882332180/844039682244739113/image2.png",
+    "https://cdn.discordapp.com/attachments/820148747882332180/844039681955856394/image1.png",
+    "https://cdn.discordapp.com/attachments/820148747882332180/844039681653997578/image0.png",
+    "https://cdn.discordapp.com/attachments/820148747882332180/844039652712906782/image9.png",
+    "https://cdn.discordapp.com/attachments/820148747882332180/844039652327555082/image8.png",
+    "https://cdn.discordapp.com/attachments/820148747882332180/844039651794616330/image7.png",
+    "https://cdn.discordapp.com/attachments/820148747882332180/844039651286056960/image6.png",
+    "https://cdn.discordapp.com/attachments/820148747882332180/844039650909749258/image5.png",
+    "https://cdn.discordapp.com/attachments/820148747882332180/844039650552447016/image4.png",
+    "https://cdn.discordapp.com/attachments/820148747882332180/844039650267496448/image3.png",
+    "https://cdn.discordapp.com/attachments/820148747882332180/844039649932738560/image2.png",
+    "https://cdn.discordapp.com/attachments/820148747882332180/844039649659846696/image1.png",
+    "https://cdn.discordapp.com/attachments/820148747882332180/844039649331904512/image0.png",
+]
 
+
+# setup/helper functions
 def get_node_code(n):
     # it doesn't have to be unique
-
     if n > 999:
         num = int(str(n + random.randint(0, 99))[:2])
     else:
@@ -29,9 +50,6 @@ def get_node_code(n):
         return stnum[:2]
 
 
-# setup
-# db.create_collection("nodes")
-# db.create_collection("users")
 def costruct_node(nodeid, latitude, longitude, clue1, clue2):
     try:
         code = get_node_code(nodeid)
@@ -53,14 +71,222 @@ def add_node(db, nodeid, latitude, longitude, clue1, clue2):
     db["nodes"].insert_one(node)
 
 
+def create_path():
+    res = db["nodes"].aggregate(
+        [
+            {"$sample": {"size": 8}},
+            {
+                "$project": {
+                    "_id": 1,
+                    "code": 1,
+                    "latitude": 1,
+                    "longitude": 1,
+                    "clue1": 1,
+                    "clue2": 1,
+                }
+            },
+        ]
+    )
+    res = list(res)
+    for i in range(0, len(res)):
+        res[i]["index"] = i
+        res[i]["start"] = None
+        res[i]["stop"] = None
+    return res
+
+
 def add_user(db, email, name, profile_pic):
-    db["nodes"].insert_one({"email": email, "name": name, "profile_pic": profile_pic})
+    route = create_path()
+    db["users"].insert_one(
+        {
+            "email": email,
+            "name": name,
+            "profile_pic": profile_pic,
+            "average_speed": 0,
+            "score": 0,
+            "hats": [],
+            "current_index": 0,
+            "path": route,
+        }
+    )
 
 
-def next_node(uuid):
-    pass
+# probably delete and remake
+def get_user_location(uuid):
+    try:
+        user = db["users"].find_one({"_id": ObjectId(uuid)})
+        path = user["path"]
+        for i in range(0, len(path) - 1):
+            if path[i]["start"] == None:
+                return {"status": "success", "id": path[i]["_id"]}
+    except Exception as e:
+        print(e)
+        return {"status": "failed"}
 
 
-def distance(node1_id, node2_id):
-    # retrieves longitude and latitude of each node and performs haversine distance
-    pass
+# probably delete and remake
+def get_location_info(id):
+    try:
+        node = db["nodes"].find_one({"_id": ObjectId(id)})
+        return {"location": node, "status": "success"}
+    except Exception as e:
+        print(e)
+        return {"status": "failed"}
+
+
+def initialize_location(uuid):
+    try:
+        now = datetime.utcnow()
+        id = ObjectId(uuid)
+        db.users.update_one({"_id": id}, {"$set": {"path.0.start": now}})
+    except Exception as e:
+        print(e)
+        return {"status": "failed"}
+
+
+def update_location(uuid):
+    try:
+        now = datetime.utcnow()
+        id = ObjectId(uuid)
+        user = db["users"].find_one({"_id": id})
+        current_index = user["current_index"]
+        if current_index < 7:
+            db.users.update_one(
+                {"_id": id}, {"$set": {f"path.{current_index}.stop": now}}
+            )
+            db.users.update_one(
+                {"_id": id}, {"$set": {f"path.{current_index+1}.start": now}}
+            )
+            db.users.update_one(
+                {"_id": id}, {"$set": {"current_index": current_index + 1}}
+            )
+        elif current_index == 7:
+            db.users.update_one(
+                {"_id": id}, {"$set": {f"path.{current_index}.stop": now}}
+            )
+
+    except Exception as e:
+        print(e)
+        return {"status": "failed"}
+
+
+def get_velocity(uuid):
+    try:
+        user = db.users.find_one({"_id": ObjectId(uuid)})
+        path = user["path"]
+        farthest_index = user["current_index"]
+        if farthest_index > 0:
+            dt = (path[farthest_index]["stop"] - path[0]["stop"]).total_seconds()
+            dx = 0
+
+            for i in range(0, len(path) - 2):
+                a = (path[i]["latitude"], path[i]["longitude"])
+                b = (path[i + 1]["latitude"], path[i + 1]["longitude"])
+                dist = haversine(a, b, unit="m")
+                dx += dist
+            return dx / dt
+        else:
+            return 0
+    except Exception as e:
+        print(e)
+        return {"status": "failed"}
+
+
+def update_velocity(uuid):
+    try:
+        velocity = get_velocity(uuid)
+        db.users.update_one(
+            {"_id": ObjectId(uuid)}, {"$set": {"average_speed": velocity}}
+        )
+    except Exception as e:
+        print(e)
+        return {"status": "failed"}
+
+
+def score(path_index, avg_velocity):
+    return (path_index + 1) * avg_velocity
+
+
+def update_score(uuid):
+    try:
+        update_velocity(uuid)
+        user = db.users.find_one({"_id": ObjectId(uuid)})
+        path_index = user["current_index"]
+        velocity = user["average_speed"]
+        db.users.update_one(
+            {"_id": ObjectId(uuid)}, {"$set": {"score": score(path_index, velocity)}}
+        )
+    except Exception as e:
+        print(e)
+        return {"status": "failed"}
+
+
+def get_leaderboard():
+    pipeline = [{"$project": {"name": 1, "current_index": 1, "score": 1, "_id": 0}}]
+    return sorted(
+        list(db.users.aggregate(pipeline=pipeline)),
+        key=lambda k: k["score"],
+        reverse=True,
+    )
+
+
+# business stuff
+
+
+def current_clues(uuid):
+    try:
+        user = db.users.find_one({"_id": ObjectId(uuid)})
+        current_index = user["current_index"]
+
+        return {
+            "clue1": user["path"][current_index]["clue1"],
+            "clue2": user["path"][current_index]["clue2"],
+        }
+    except Exception as e:
+        print(e)
+        return {"status": "failed"}
+
+
+def handle_code(uuid, code):
+    try:
+        user = db.users.find_one(ObjectId(uuid))
+        current_index = user["current_index"]
+        if str(code) == user["path"][current_index]["code"]:
+            update_location(uuid)
+            hat = add_hat(uuid)
+            return {"status": "success", "clues": current_clues(uuid), "newhat": hat}
+        else:
+            return {"status": "failed"}
+    except Exception as e:
+        print(e)
+        return {"status": "failed"}
+
+
+def login(email):
+    uuid = str(db.users.find_one({"email": email})["_id"])
+    initialize_location(uuid)
+    return uuid
+
+
+def add_hat(uuid):
+    try:
+        user = db["users"].find_one({"_id": ObjectId(uuid)})
+        cur_hats = user["hats"]
+        random.shuffle(hat_urls)
+        for hat in hat_urls:
+            if hat not in cur_hats:
+                db.users.update({"_id": ObjectId(uuid)}, {"$push": {"hats": hat}})
+                return hat
+                break
+    except Exception as e:
+        print(e)
+        return {"status": "failed"}
+
+
+def get_hats(uuid):
+    try:
+        user = db.users.find_one({"_id": ObjectId(uuid)})
+        return {"status": "success", "hats": user["hats"]}
+    except Exception as e:
+        print(e)
+        return {"status": "failed"}
