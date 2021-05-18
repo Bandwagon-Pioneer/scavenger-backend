@@ -27,7 +27,6 @@ hat_urls = [
     "https://cdn.discordapp.com/attachments/820148747882332180/844039649331904512/image0.png",
 ]
 
-
 # setup/helper functions
 def get_node_code(n):
     # it doesn't have to be unique
@@ -109,29 +108,6 @@ def add_user(db, email, name, profile_pic):
             "path": route,
         }
     )
-
-
-# probably delete and remake
-def get_user_location(uuid):
-    try:
-        user = db["users"].find_one({"_id": ObjectId(uuid)})
-        path = user["path"]
-        for i in range(0, len(path) - 1):
-            if path[i]["start"] == None:
-                return {"status": "success", "id": path[i]["_id"]}
-    except Exception as e:
-        print(e)
-        return {"status": "failed"}
-
-
-# probably delete and remake
-def get_location_info(id):
-    try:
-        node = db["nodes"].find_one({"_id": ObjectId(id)})
-        return {"location": node, "status": "success"}
-    except Exception as e:
-        print(e)
-        return {"status": "failed"}
 
 
 def initialize_location(uuid):
@@ -253,6 +229,7 @@ def handle_code(uuid, code):
         current_index = user["current_index"]
         if str(code) == user["path"][current_index]["code"]:
             update_location(uuid)
+            update_score(uuid)
             hat = add_hat(uuid)
             return {"status": "success", "clues": current_clues(uuid), "newhat": hat}
         else:
