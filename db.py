@@ -4,6 +4,7 @@ import random
 from bson.objectid import ObjectId
 from datetime import date, datetime
 from haversine import haversine, Unit
+import pytz
 
 client = MongoClient("localhost", 27017)
 
@@ -49,11 +50,7 @@ def get_node_code(n):
         return stnum[:2]
 
 
-def costruct_node(nodeid, latitude, longitude, clue1, clue2):
-    try:
-        code = get_node_code(nodeid)
-    except:
-        raise IndexError
+def costruct_node(nodeid, latitude, longitude, clue1, code):
 
     return {
         "nodeid": nodeid,
@@ -61,12 +58,11 @@ def costruct_node(nodeid, latitude, longitude, clue1, clue2):
         "latitude": latitude,
         "longitude": longitude,
         "clue1": clue1,  # "img|"+"https://cdn.asdaad.com" OR "txt|"+"some fantastic clue"
-        "clue2": clue2,
     }
 
 
-def add_node(db, nodeid, latitude, longitude, clue1, clue2):
-    node = costruct_node(nodeid, latitude, longitude, clue1, clue2)
+def add_node(db, nodeid, latitude, longitude, clue1, code):
+    node = costruct_node(nodeid, latitude, longitude, clue1, code)
     db["nodes"].insert_one(node)
 
 
@@ -81,7 +77,6 @@ def create_path():
                     "latitude": 1,
                     "longitude": 1,
                     "clue1": 1,
-                    "clue2": 1,
                 }
             },
         ]
@@ -152,7 +147,7 @@ def get_velocity(uuid):
         path = user["path"]
         farthest_index = user["current_index"]
         if farthest_index > 0:
-            dt = (path[farthest_index]["stop"] - path[0]["stop"]).total_seconds()
+            dt = (path[farthest_index]["start"] - path[0]["start"]).total_seconds()
             dx = 0
 
             for i in range(0, len(path) - 2):
@@ -198,12 +193,24 @@ def update_score(uuid):
 
 
 def get_leaderboard():
-    pipeline = [{"$project": {"name": 1, "current_index": 1, "score": 1, "_id": 0}}]
+    pipeline = [
+        {"$match": {"current_index": {"$gt": 0}}},
+        {"$project": {"name": 1, "current_index": 1, "score": 1, "_id": 0}},
+    ]
     return sorted(
         list(db.users.aggregate(pipeline=pipeline)),
         key=lambda k: k["score"],
         reverse=True,
     )
+
+
+def get_end_time():
+    endtime = db.endtime.find_one({"_id": ObjectId("60a48ef494ea8cb54a243443")})
+    return endtime
+
+
+def update_time(hour, minute):
+    pass
 
 
 # business stuff
@@ -216,7 +223,6 @@ def current_clues(uuid):
 
         return {
             "clue1": user["path"][current_index]["clue1"],
-            "clue2": user["path"][current_index]["clue2"],
         }
     except Exception as e:
         print(e)

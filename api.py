@@ -44,4 +44,7 @@ def hats(uuid):
     return db.get_hats(uuid)
 
 
+# add time till ya have to be back endpoint
+
+
 app.run()
