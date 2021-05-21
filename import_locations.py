@@ -13,5 +13,5 @@ for index, row in sheet.iterrows():
         float(coords[1]),
         row["Clue/Riddle 1"],
         row["Clue/Riddle 2"],
-        str(row["Code"].replace('"', "")),
+        str(row["Code"]).replace('"', ""),
     )

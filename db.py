@@ -222,8 +222,12 @@ def get_rank_and_farthest(uuid):
         for i in range(len(leaders)):
             if uuid == str(leaders[i]["_id"]):
                 rank = i + 1
-                farthest = leaders[i]["current_index"] + 1
+                farthest = leaders[i]["current_index"]
                 break
+        if(rank == None):
+            rank = db.users.count_documents({})
+        if(farthest == None):
+            farthest = 0
         return {"status": "success", "rank": rank, "farthest": farthest}
     except Exception as e:
         print(e)
@@ -244,6 +248,7 @@ def current_clues(uuid):
         current_index = user["current_index"]
 
         return {
+            "status": "success",
             "clue1": user["path"][current_index]["clue1"],
             "clue2": user["path"][current_index]["clue2"],
         }
@@ -256,9 +261,11 @@ def handle_code(uuid, code):
     try:
         user = db.users.find_one(ObjectId(uuid))
         current_index = user["current_index"]
-        if current_index == 14:
-            return {"status": "completed"}
-        elif str(code) == user["path"][current_index]["code"]:
+        if str(code) == user["path"][current_index]["code"]:
+            if current_index == 14:
+                hat = add_hat(uuid)
+                update_score(uuid)
+                return {"status": "completed", "newhat": hat}
             update_location(uuid)
             update_score(uuid)
             hat = add_hat(uuid)
@@ -285,9 +292,11 @@ def clue2_time(uuid):
         user = db.users.find_one({"_id": ObjectId(uuid)})
         current_index = user["current_index"]
         start = user["path"][current_index]["start"]
+        clue_time = round((start + timedelta(minutes=3, hours=-4)).timestamp());
+        print(f"start: {start.timestamp()}, clue 2 at: {clue_time}, current time: {datetime.now().timestamp()}")
         return {
             "status": "success",
-            "clue2time": round((start + timedelta(minutes=3)).timestamp()),
+            "clue2time": clue_time,
         }
     except Exception as e:
         print(e)

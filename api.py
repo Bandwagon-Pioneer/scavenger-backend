@@ -77,4 +77,4 @@ def clue2_time(uuid):
     return db.clue2_time(uuid)
 
 
-app.run()
+app.run(host='192.168.0.14')
