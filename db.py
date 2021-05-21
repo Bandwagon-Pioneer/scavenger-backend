@@ -2,7 +2,7 @@ import pymongo
 from pymongo import MongoClient
 import random
 from bson.objectid import ObjectId
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from haversine import haversine, Unit
 import pytz
 
@@ -270,6 +270,7 @@ def handle_code(uuid, code):
         return {"status": "failed"}
 
 
+# remember to wrap in try block
 def login(email):
     user = db.users.find_one({"email": email})
     uuid = str(user["_id"])
@@ -277,6 +278,20 @@ def login(email):
     if user["path"][0]["start"] == None:
         initialize_location(uuid)
     return uuid
+
+
+def clue2_time(uuid):
+    try:
+        user = db.users.find_one({"_id": ObjectId(uuid)})
+        current_index = user["current_index"]
+        start = user["path"][current_index]["start"]
+        return {
+            "status": "success",
+            "clue2time": round((start + timedelta(minutes=3)).timestamp()),
+        }
+    except Exception as e:
+        print(e)
+        return {"status": "failed"}
 
 
 def add_hat(uuid):

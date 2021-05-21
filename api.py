@@ -71,4 +71,10 @@ def rank(uuid):
     return db.get_rank_and_farthest(uuid)
 
 
+# utc time "start" +3 minutes
+@app.route("/api/clue2-time/uuid=<uuid>")
+def clue2_time(uuid):
+    return db.clue2_time(uuid)
+
+
 app.run()
