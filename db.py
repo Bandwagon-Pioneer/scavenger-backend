@@ -204,6 +204,28 @@ def get_leaderboard():
     )
 
 
+def get_rank(uuid):
+    try:
+        pipeline = [
+            {"$match": {"current_index": {"$gt": 0}}},
+            {"$project": {"_id": 1, "score": 1}},
+        ]
+        leaders = sorted(
+            list(db.users.aggregate(pipeline=pipeline)),
+            key=lambda k: k["score"],
+            reverse=True,
+        )
+        rank = None
+        for i in range(len(leaders)):
+            if uuid == str(leaders[i]["_id"]):
+                rank = i + 1
+                break
+        return {"status": "success", "rank": rank}
+    except Exception as e:
+        print(e)
+        return {"status": "failed"}
+
+
 def get_end_time():
     endtime = db.endtime.find_one({"_id": ObjectId("60a48ef494ea8cb54a243443")})
     return endtime
@@ -246,8 +268,11 @@ def handle_code(uuid, code):
 
 
 def login(email):
-    uuid = str(db.users.find_one({"email": email})["_id"])
-    initialize_location(uuid)
+    user = db.users.find_one({"email": email})
+    uuid = str(user["_id"])
+    print(user["path"][0]["start"])
+    if user["path"][0]["start"] == None:
+        initialize_location(uuid)
     return uuid
 
 
