@@ -78,6 +78,7 @@ def create_path():
                     "latitude": 1,
                     "longitude": 1,
                     "clue1": 1,
+                    "clue2": 1,
                 }
             },
         ]
@@ -234,10 +235,6 @@ def get_end_time():
     return endtime
 
 
-def update_time(hour, minute):
-    pass
-
-
 # business stuff
 
 
@@ -248,6 +245,7 @@ def current_clues(uuid):
 
         return {
             "clue1": user["path"][current_index]["clue1"],
+            "clue2": user["path"][current_index]["clue2"],
         }
     except Exception as e:
         print(e)
@@ -258,7 +256,9 @@ def handle_code(uuid, code):
     try:
         user = db.users.find_one(ObjectId(uuid))
         current_index = user["current_index"]
-        if str(code) == user["path"][current_index]["code"]:
+        if current_index == 14:
+            return {"status": "completed"}
+        elif str(code) == user["path"][current_index]["code"]:
             update_location(uuid)
             update_score(uuid)
             hat = add_hat(uuid)
