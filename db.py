@@ -204,11 +204,11 @@ def get_leaderboard():
     )
 
 
-def get_rank(uuid):
+def get_rank_and_farthest(uuid):
     try:
         pipeline = [
             {"$match": {"current_index": {"$gt": 0}}},
-            {"$project": {"_id": 1, "score": 1}},
+            {"$project": {"_id": 1, "score": 1, "current_index": 1}},
         ]
         leaders = sorted(
             list(db.users.aggregate(pipeline=pipeline)),
@@ -216,11 +216,13 @@ def get_rank(uuid):
             reverse=True,
         )
         rank = None
+        farthest = None
         for i in range(len(leaders)):
             if uuid == str(leaders[i]["_id"]):
                 rank = i + 1
+                farthest = leaders[i]["current_index"] + 1
                 break
-        return {"status": "success", "rank": rank}
+        return {"status": "success", "rank": rank, "farthest": farthest}
     except Exception as e:
         print(e)
         return {"status": "failed"}

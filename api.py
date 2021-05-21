@@ -54,9 +54,9 @@ def hats(uuid):
 
 
 # returns {"_id": id, "rank": rank}
-@app.route("/api/rank/uuid=<uuid>")
+@app.route("/api/rank-and-farthest/uuid=<uuid>")
 def rank(uuid):
-    return db.get_rank(uuid)
+    return db.get_rank_and_farthest(uuid)
 
 
 app.run()
