@@ -272,12 +272,16 @@ def handle_code(uuid, code):
 
 # remember to wrap in try block
 def login(email):
-    user = db.users.find_one({"email": email})
-    uuid = str(user["_id"])
-    print(user["path"][0]["start"])
-    if user["path"][0]["start"] == None:
-        initialize_location(uuid)
-    return uuid
+    try:
+        user = db.users.find_one({"email": email})
+        uuid = str(user["_id"])
+        print(user["path"][0]["start"])
+        if user["path"][0]["start"] == None:
+            initialize_location(uuid)
+        return uuid
+    except Exception as e:
+        print(e)
+        return {"status": "failed"}
 
 
 def clue2_time(uuid):
