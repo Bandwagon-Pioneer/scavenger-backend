@@ -50,26 +50,27 @@ def get_node_code(n):
         return stnum[:2]
 
 
-def costruct_node(nodeid, latitude, longitude, clue1, code):
+def costruct_node(nodeid, latitude, longitude, clue1, clue2, code):
 
     return {
         "nodeid": nodeid,
         "code": code,  # db.get_node_code(nodeid)
         "latitude": latitude,
         "longitude": longitude,
-        "clue1": clue1,  # "img|"+"https://cdn.asdaad.com" OR "txt|"+"some fantastic clue"
+        "clue1": clue1,
+        "clue2": clue2,  # "img|"+"https://cdn.asdaad.com" OR "txt|"+"some fantastic clue"
     }
 
 
-def add_node(db, nodeid, latitude, longitude, clue1, code):
-    node = costruct_node(nodeid, latitude, longitude, clue1, code)
+def add_node(db, nodeid, latitude, longitude, clue1, clue2, code):
+    node = costruct_node(nodeid, latitude, longitude, clue1, clue2, code)
     db["nodes"].insert_one(node)
 
 
 def create_path():
     res = db["nodes"].aggregate(
         [
-            {"$sample": {"size": 8}},
+            {"$sample": {"size": 15}},
             {
                 "$project": {
                     "_id": 1,
@@ -121,7 +122,7 @@ def update_location(uuid):
         id = ObjectId(uuid)
         user = db["users"].find_one({"_id": id})
         current_index = user["current_index"]
-        if current_index < 7:
+        if current_index < 14:
             db.users.update_one(
                 {"_id": id}, {"$set": {f"path.{current_index}.stop": now}}
             )
@@ -131,7 +132,7 @@ def update_location(uuid):
             db.users.update_one(
                 {"_id": id}, {"$set": {"current_index": current_index + 1}}
             )
-        elif current_index == 7:
+        elif current_index == 14:
             db.users.update_one(
                 {"_id": id}, {"$set": {f"path.{current_index}.stop": now}}
             )
