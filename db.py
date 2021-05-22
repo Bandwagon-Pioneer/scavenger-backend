@@ -320,3 +320,29 @@ def get_hats(uuid):
     except Exception as e:
         print(e)
         return {"status": "failed"}
+
+
+def get_game_info():
+    try:
+        endtime = db.endtime.find_one({})
+        return {
+            "status": "success",
+            "helpline": "765-586-3986",
+            "endtime": endtime["end"],
+        }
+    except Exception as e:
+        print(e)
+        return {"status": "failed"}
+
+
+def update_endtime(
+    new_day,
+    new_hour,
+    new_minute,
+):
+    try:
+        t = datetime(2021, 5, new_day, new_hour, new_minute)
+        db.endtime.update_one({}, {"$set": {"end": t}})
+    except Exception as e:
+        print(e)
+        return {"status": "failed"}

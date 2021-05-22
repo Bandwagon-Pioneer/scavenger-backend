@@ -77,4 +77,10 @@ def clue2_time(uuid):
     return db.clue2_time(uuid)
 
 
+# sends helpline (Angie's phone number) and the end time of the game
+@app.route("/api/game-info")
+def game_info():
+    return db.get_game_info()
+
+
 app.run()
