@@ -257,7 +257,9 @@ def handle_code(uuid, code):
         user = db.users.find_one(ObjectId(uuid))
         current_index = user["current_index"]
         if current_index == 14:
-            return {"status": "completed"}
+            hat = add_hat(uuid)
+            update_score(uuid)
+            return {"status": "completed", "newhat": hat}
         elif str(code) == user["path"][current_index]["code"]:
             update_location(uuid)
             update_score(uuid)
@@ -270,7 +272,6 @@ def handle_code(uuid, code):
         return {"status": "failed"}
 
 
-# remember to wrap in try block
 def login(email):
     try:
         user = db.users.find_one({"email": email})
@@ -289,9 +290,14 @@ def clue2_time(uuid):
         user = db.users.find_one({"_id": ObjectId(uuid)})
         current_index = user["current_index"]
         start = user["path"][current_index]["start"]
+        clue_time = round((start + timedelta(minutes=3, hours=-4)).timestamp())
+        print(
+            f"start: {start.timestamp()}, clue 2 at: {clue_time}, current time: {datetime.now().timestamp()}"
+        )
+
         return {
             "status": "success",
-            "clue2time": round((start + timedelta(minutes=3)).timestamp()),
+            "clue2time": round((start + timedelta(minutes=3, hours=-4)).timestamp()),
         }
     except Exception as e:
         print(e)
@@ -341,6 +347,7 @@ def update_endtime(
     new_minute,
 ):
     try:
+        EST = pytz.timezone("US/Michigan")
         t = datetime(2021, 5, new_day, new_hour, new_minute)
         db.endtime.update_one({}, {"$set": {"end": t}})
     except Exception as e:
