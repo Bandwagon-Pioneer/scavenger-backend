@@ -11,6 +11,7 @@ ngrok http -region=us -hostname=holloway-hunt.ngrok.io 80
 ### startup servers
 
 cd FRONTEND/BUILD
+
 pm2 serve build 80 --spa
 
 cd BACKEND
