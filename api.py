@@ -83,4 +83,5 @@ def game_info():
     return db.get_game_info()
 
 
-app.run()
+if __name__ == "__main__":
+    app.run()
