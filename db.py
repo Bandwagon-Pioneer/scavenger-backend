@@ -242,12 +242,14 @@ def current_clues(uuid):
     try:
         user = db.users.find_one({"_id": ObjectId(uuid)})
         current_index = user["current_index"]
-
-        return {
-            "status": "success",
-            "clue1": user["path"][current_index]["clue1"],
-            "clue2": user["path"][current_index]["clue2"],
-        }
+        if current_index < 14:
+            return {
+                "status": "success",
+                "clue1": user["path"][current_index]["clue1"],
+                "clue2": user["path"][current_index]["clue2"],
+            }
+        else:
+            return {"status": "success", "clue1": "You finished! Congrats!"}
     except Exception as e:
         print(e)
         return {"status": "failed"}
@@ -279,7 +281,6 @@ def login(email):
         if user == None:
             return {"status": "failed"}
         uuid = str(user["_id"])
-        print(user["path"][0]["start"])
         if user["path"][0]["start"] == None:
             initialize_location(uuid)
         return {"status": "success", "uuid": uuid}
@@ -293,14 +294,14 @@ def clue2_time(uuid):
         user = db.users.find_one({"_id": ObjectId(uuid)})
         current_index = user["current_index"]
         start = user["path"][current_index]["start"]
-        clue_time = round((start + timedelta(minutes=3, hours=-4)).timestamp())
-        print(
+        clue_time = round((start + timedelta(minutes=2, hours=-4)).timestamp())
+        """print(
             f"start: {start.timestamp()}, clue 2 at: {clue_time}, current time: {datetime.now().timestamp()}"
         )
-
+        """
         return {
             "status": "success",
-            "clue2time": round((start + timedelta(minutes=3, hours=-4)).timestamp()),
+            "clue2time": round((start + timedelta(minutes=2, hours=-4)).timestamp()),
         }
     except Exception as e:
         print(e)
