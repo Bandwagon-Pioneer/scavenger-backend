@@ -222,7 +222,7 @@ def get_rank_and_farthest(uuid):
         for i in range(len(leaders)):
             if uuid == str(leaders[i]["_id"]):
                 rank = i + 1
-                farthest = leaders[i]["current_index"] + 1
+                farthest = leaders[i]["current_index"]
                 break
         return {"status": "success", "rank": rank, "farthest": farthest}
     except Exception as e:
@@ -244,6 +244,7 @@ def current_clues(uuid):
         current_index = user["current_index"]
 
         return {
+            "status": "success",
             "clue1": user["path"][current_index]["clue1"],
             "clue2": user["path"][current_index]["clue2"],
         }
@@ -275,11 +276,13 @@ def handle_code(uuid, code):
 def login(email):
     try:
         user = db.users.find_one({"email": email})
+        if user == None:
+            return {"status": "failed"}
         uuid = str(user["_id"])
         print(user["path"][0]["start"])
         if user["path"][0]["start"] == None:
             initialize_location(uuid)
-        return uuid
+        return {"status": "success", "uuid": uuid}
     except Exception as e:
         print(e)
         return {"status": "failed"}

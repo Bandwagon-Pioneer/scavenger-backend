@@ -39,7 +39,7 @@ def submit_code(uuid, code):
 # login (email) -> ObjectId #remember to index on email, as well to make login fast!
 @app.route("/api/login/email=<email>")
 def login(email):
-    return {"uuid": db.login(email)}
+    return db.login(email)
 
 
 # clues for current-location (uuid) -> (clue1, clue2), hat_links
