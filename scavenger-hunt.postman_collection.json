@@ -1,0 +1,605 @@
+{
+	"info": {
+		"_postman_id": "2be720c1-82b7-4846-bdcc-4cc93920e8de",
+		"name": "scavenger-hunt",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "leaderboard",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:5000/api/leaderboard",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"leaderboard"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "leaderboard",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:5000/api/leaderboard",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"leaderboard"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"key": "Content-Length",
+							"value": "350"
+						},
+						{
+							"key": "Access-Control-Allow-Origin",
+							"value": "*"
+						},
+						{
+							"key": "Server",
+							"value": "Werkzeug/1.0.1 Python/3.8.4"
+						},
+						{
+							"key": "Date",
+							"value": "Sat, 22 May 2021 23:07:31 GMT"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"leaderboard\": [\n        {\n            \"current_index\": 14,\n            \"name\": \"Jeremi Forman-Duranona\",\n            \"score\": 379.3053715739833\n        },\n        {\n            \"current_index\": 1,\n            \"name\": \"Reid Taylor\",\n            \"score\": 227.65689097957684\n        },\n        {\n            \"current_index\": 1,\n            \"name\": \"Noah Vogel\",\n            \"score\": 117.18590800206263\n        }\n    ]\n}"
+				}
+			]
+		},
+		{
+			"name": "game_info",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:5000/api/game-info",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"game-info"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "game_info",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:5000/api/game-info",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"game-info"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"key": "Content-Length",
+							"value": "104"
+						},
+						{
+							"key": "Access-Control-Allow-Origin",
+							"value": "*"
+						},
+						{
+							"key": "Server",
+							"value": "Werkzeug/1.0.1 Python/3.8.4"
+						},
+						{
+							"key": "Date",
+							"value": "Sat, 22 May 2021 23:06:54 GMT"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"endtime\": \"Sat, 22 May 2021 07:00:00 GMT\",\n    \"helpline\": \"765-586-3986\",\n    \"status\": \"success\"\n}"
+				}
+			]
+		},
+		{
+			"name": "login",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:5000/api/login/email=2022vogelnoahr@aaps.k12.mi.us",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"login",
+						"email=2022vogelnoahr@aaps.k12.mi.us"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "login",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:5000/api/login/email=2022vogelnoahr@aaps.k12.mi.us",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"login",
+								"email=2022vogelnoahr@aaps.k12.mi.us"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"key": "Content-Length",
+							"value": "41"
+						},
+						{
+							"key": "Access-Control-Allow-Origin",
+							"value": "*"
+						},
+						{
+							"key": "Server",
+							"value": "Werkzeug/1.0.1 Python/3.8.4"
+						},
+						{
+							"key": "Date",
+							"value": "Sat, 22 May 2021 23:07:50 GMT"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"uuid\": \"60a71fd3c4599c8884322907\"\n}"
+				}
+			]
+		},
+		{
+			"name": "submit",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "127.0.0.1:5000/api/submit/uuid=60a71fd3c4599c8884322907/code=889",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"submit",
+						"uuid=60a71fd3c4599c8884322907",
+						"code=889"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "submit",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "127.0.0.1:5000/api/submit/uuid=60a71fd3c4599c8884322907/code=528",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"submit",
+								"uuid=60a71fd3c4599c8884322907",
+								"code=528"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"key": "Content-Length",
+							"value": "348"
+						},
+						{
+							"key": "Access-Control-Allow-Origin",
+							"value": "*"
+						},
+						{
+							"key": "Server",
+							"value": "Werkzeug/1.0.1 Python/3.8.4"
+						},
+						{
+							"key": "Date",
+							"value": "Sat, 22 May 2021 23:08:03 GMT"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"clues\": {\n        \"clue1\": \"Violets are red, roses are blue. We grow plants inside, just like supposed to.\",\n        \"clue2\": \"https://cdn.discordapp.com/attachments/844619356779839508/844628985648119848/image0.jpg\"\n    },\n    \"newhat\": \"https://cdn.discordapp.com/attachments/820148747882332180/844039650552447016/image4.png\",\n    \"status\": \"success\"\n}"
+				}
+			]
+		},
+		{
+			"name": "current-clues",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:5000/api/current-clues/uuid=60a71fd3c4599c8884322907",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"current-clues",
+						"uuid=60a71fd3c4599c8884322907"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "current-clues",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:5000/api/current-clues/uuid=60a71fd3c4599c8884322907",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"current-clues",
+								"uuid=60a71fd3c4599c8884322907"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"key": "Content-Length",
+							"value": "199"
+						},
+						{
+							"key": "Access-Control-Allow-Origin",
+							"value": "*"
+						},
+						{
+							"key": "Server",
+							"value": "Werkzeug/1.0.1 Python/3.8.4"
+						},
+						{
+							"key": "Date",
+							"value": "Sat, 22 May 2021 23:08:10 GMT"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"clue1\": \"Violets are red, roses are blue. We grow plants inside, just like supposed to.\",\n    \"clue2\": \"https://cdn.discordapp.com/attachments/844619356779839508/844628985648119848/image0.jpg\"\n}"
+				}
+			]
+		},
+		{
+			"name": "hats",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:5000/api/hats/uuid=60a71fd3c4599c8884322907",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"hats",
+						"uuid=60a71fd3c4599c8884322907"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "hats",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:5000/api/hats/uuid=60a71fd3c4599c8884322907",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"hats",
+								"uuid=60a71fd3c4599c8884322907"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"key": "Content-Length",
+							"value": "234"
+						},
+						{
+							"key": "Access-Control-Allow-Origin",
+							"value": "*"
+						},
+						{
+							"key": "Server",
+							"value": "Werkzeug/1.0.1 Python/3.8.4"
+						},
+						{
+							"key": "Date",
+							"value": "Sat, 22 May 2021 23:08:15 GMT"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"hats\": [\n        \"https://cdn.discordapp.com/attachments/820148747882332180/844039652327555082/image8.png\",\n        \"https://cdn.discordapp.com/attachments/820148747882332180/844039650552447016/image4.png\"\n    ],\n    \"status\": \"success\"\n}"
+				}
+			]
+		},
+		{
+			"name": "rank-and-farthest",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:5000/api/rank-and-farthest/uuid=60a71fd3c4599c8884322907",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"rank-and-farthest",
+						"uuid=60a71fd3c4599c8884322907"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "rank-and-farthest",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:5000/api/rank-and-farthest/uuid=60a71fd3c4599c8884322907",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"rank-and-farthest",
+								"uuid=60a71fd3c4599c8884322907"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"key": "Content-Length",
+							"value": "58"
+						},
+						{
+							"key": "Access-Control-Allow-Origin",
+							"value": "*"
+						},
+						{
+							"key": "Server",
+							"value": "Werkzeug/1.0.1 Python/3.8.4"
+						},
+						{
+							"key": "Date",
+							"value": "Sat, 22 May 2021 23:08:20 GMT"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"farthest\": 3,\n    \"rank\": 3,\n    \"status\": \"success\"\n}"
+				}
+			]
+		},
+		{
+			"name": "clue2-time",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:5000/api/clue2-time/uuid=60a71fd3c4599c8884322907",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"clue2-time",
+						"uuid=60a71fd3c4599c8884322907"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "clue2-time",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:5000/api/clue2-time/uuid=60a71fd3c4599c8884322907",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"clue2-time",
+								"uuid=60a71fd3c4599c8884322907"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						},
+						{
+							"key": "Content-Length",
+							"value": "54"
+						},
+						{
+							"key": "Access-Control-Allow-Origin",
+							"value": "*"
+						},
+						{
+							"key": "Server",
+							"value": "Werkzeug/1.0.1 Python/3.8.4"
+						},
+						{
+							"key": "Date",
+							"value": "Sat, 22 May 2021 23:08:27 GMT"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"clue2time\": 1621725064,\n    \"status\": \"success\"\n}"
+				}
+			]
+		}
+	]
+}

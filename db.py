@@ -5,6 +5,7 @@ from bson.objectid import ObjectId
 from datetime import date, datetime, timedelta
 from haversine import haversine, Unit
 import pytz
+import requests
 
 client = MongoClient("localhost", 27017)
 
@@ -28,43 +29,22 @@ hat_urls = [
     "https://cdn.discordapp.com/attachments/820148747882332180/844039649331904512/image0.png",
 ]
 
+
 # setup/helper functions
-def get_node_code(n):
-    # it doesn't have to be unique
-    if n > 999:
-        num = int(str(n + random.randint(0, 99))[:2])
-    else:
-        num = n + random.randint(100, 900)
-
-    stnum = str(num)
-    l = len(stnum)
-    if l == 1:
-        return "00" + stnum
-    elif l == 2:
-        return "0" + stnum
-    elif l == 3:
-        return stnum
-    elif l == 0:
-        raise ValueError
-    else:
-        return stnum[:2]
 
 
-def costruct_node(nodeid, latitude, longitude, clue1, clue2, code):
-
-    return {
-        "nodeid": nodeid,
-        "code": code,  # db.get_node_code(nodeid)
-        "latitude": latitude,
-        "longitude": longitude,
-        "clue1": clue1,
-        "clue2": clue2,  # "img|"+"https://cdn.asdaad.com" OR "txt|"+"some fantastic clue"
-    }
-
-
-def add_node(db, nodeid, latitude, longitude, clue1, clue2, code):
-    node = costruct_node(nodeid, latitude, longitude, clue1, clue2, code)
-    db["nodes"].insert_one(node)
+def add_node(db, userid, clue1, code):
+    """
+    users are the 'locations', so userid identifies them
+    """
+    db["nodes"].insert_one(
+        {
+            "userid": userid,
+            "code": code,  # db.get_node_code(userid)
+            "clue1": clue1,
+            "clue2": None,  # "img|"+"https://cdn.asdaad.com" OR "txt|"+"some fantastic clue"
+        }
+    )
 
 
 def create_path():
@@ -91,107 +71,59 @@ def create_path():
     return res
 
 
-def add_user(db, email, name, profile_pic):
+import pickle
+from pprint import pprint
+
+
+def fetch_password(i):
+    file_name = "passwords.pkl"
+    open_file = open(file_name, "rb")
+    loaded_list = pickle.load(open_file)
+    pword = loaded_list[i]
+    open_file.close()
+    return pword
+
+
+def check_password(db, passhash, uuid):
+    # passhash is just the password for now
+    user = db["users"].find_one({"_id": ObjectId(uuid)})
+    p2check = user["password"]
+    if p2check == passhash:
+        return True
+    else:
+        return False
+
+
+import hashlib
+
+
+def add_user(db, email, name, profile_pic, i):
     route = create_path()
     db["users"].insert_one(
         {
             "email": email,
             "name": name,
-            "profile_pic": profile_pic,
-            "average_speed": 0,
+            "password": fetch_password(i),
+            "passhash": hashlib.sha256(fetch_password(i).encode("ascii")).hexdigest(),
             "score": 0,
             "hats": [],
-            "current_index": 0,
-            "path": route,
         }
     )
 
 
 def initialize_location(uuid):
-    try:
-        now = datetime.utcnow()
-        id = ObjectId(uuid)
-        db.users.update_one({"_id": id}, {"$set": {"path.0.start": now}})
-    except Exception as e:
-        print(e)
-        return {"status": "failed"}
+    now = datetime.utcnow()
+    id = ObjectId(uuid)
+    db.users.update_one({"_id": id}, {"$set": {"path.0.start": now}})
 
 
-def update_location(uuid):
-    try:
-        now = datetime.utcnow()
-        id = ObjectId(uuid)
-        user = db["users"].find_one({"_id": id})
-        current_index = user["current_index"]
-        if current_index < 14:
-            db.users.update_one(
-                {"_id": id}, {"$set": {f"path.{current_index}.stop": now}}
-            )
-            db.users.update_one(
-                {"_id": id}, {"$set": {f"path.{current_index+1}.start": now}}
-            )
-            db.users.update_one(
-                {"_id": id}, {"$set": {"current_index": current_index + 1}}
-            )
-        elif current_index == 14:
-            db.users.update_one(
-                {"_id": id}, {"$set": {f"path.{current_index}.stop": now}}
-            )
-
-    except Exception as e:
-        print(e)
-        return {"status": "failed"}
-
-
-def get_velocity(uuid):
-    try:
-        user = db.users.find_one({"_id": ObjectId(uuid)})
-        path = user["path"]
-        farthest_index = user["current_index"]
-        if farthest_index > 0:
-            dt = (path[farthest_index]["start"] - path[0]["start"]).total_seconds()
-            dx = 0
-
-            for i in range(0, len(path) - 2):
-                a = (path[i]["latitude"], path[i]["longitude"])
-                b = (path[i + 1]["latitude"], path[i + 1]["longitude"])
-                dist = haversine(a, b, unit="m")
-                dx += dist
-            return dx / dt
-        else:
-            return 0
-    except Exception as e:
-        print(e)
-        return {"status": "failed"}
-
-
-def update_velocity(uuid):
-    try:
-        velocity = get_velocity(uuid)
-        db.users.update_one(
-            {"_id": ObjectId(uuid)}, {"$set": {"average_speed": velocity}}
-        )
-    except Exception as e:
-        print(e)
-        return {"status": "failed"}
-
-
-def score(path_index, avg_velocity):
-    return (path_index + 1) * avg_velocity
+def score():
+    pass
 
 
 def update_score(uuid):
-    try:
-        update_velocity(uuid)
-        user = db.users.find_one({"_id": ObjectId(uuid)})
-        path_index = user["current_index"]
-        velocity = user["average_speed"]
-        db.users.update_one(
-            {"_id": ObjectId(uuid)}, {"$set": {"score": score(path_index, velocity)}}
-        )
-    except Exception as e:
-        print(e)
-        return {"status": "failed"}
+    pass
+    db.users.update_one({"_id": ObjectId(uuid)}, {"$set": {"score": score()}})
 
 
 def get_leaderboard():
@@ -206,58 +138,39 @@ def get_leaderboard():
     )
 
 
-def get_rank_and_farthest(uuid):
-    try:
-        pipeline = [
-            {"$match": {"current_index": {"$gt": 0}}},
-            {"$project": {"_id": 1, "score": 1, "current_index": 1}},
-        ]
-        leaders = sorted(
-            list(db.users.aggregate(pipeline=pipeline)),
-            key=lambda k: k["score"],
-            reverse=True,
-        )
-        rank = None
-        farthest = None
-        for i in range(len(leaders)):
-            if uuid == str(leaders[i]["_id"]):
-                rank = i + 1
-                farthest = leaders[i]["current_index"]
-                break
-        return {"status": "success", "rank": rank, "farthest": farthest}
-    except Exception as e:
-        print(e)
-        return {"status": "failed"}
+def get_rank(uuid):
+    pipeline = [
+        {"$match": {"current_index": {"$gt": 0}}},
+        {"$project": {"_id": 1, "score": 1, "current_index": 1}},
+    ]
+    leaders = sorted(
+        list(db.users.aggregate(pipeline=pipeline)),
+        key=lambda k: k["score"],
+        reverse=True,
+    )
+    rank = None
+    for i in range(len(leaders)):
+        if uuid == str(leaders[i]["_id"]):
+            rank = i + 1
+            break
+    return {"status": "success", "rank": rank}
 
 
-def get_end_time():
-    endtime = db.endtime.find_one({"_id": ObjectId("60a48ef494ea8cb54a243443")})
-    return endtime
+def current_clue(uuid):
+    user = db.users.find_one({"_id": ObjectId(uuid)})
+    current_index = user["current_index"]
+    if current_index < 14:
+        return {
+            "status": "success",
+            "clue1": user["path"][current_index]["clue1"],
+        }
+    else:
+        return {"status": "success", "clue1": "You finished! Congrats!"}
 
 
-# business stuff
-
-
-def current_clues(uuid):
-    try:
-        user = db.users.find_one({"_id": ObjectId(uuid)})
-        current_index = user["current_index"]
-        if current_index < 14:
-            return {
-                "status": "success",
-                "clue1": user["path"][current_index]["clue1"],
-                "clue2": user["path"][current_index]["clue2"],
-            }
-        else:
-            return {"status": "success", "clue1": "You finished! Congrats!"}
-    except Exception as e:
-        print(e)
-        return {"status": "failed"}
-
-
-def handle_code(uuid, code):
-    try:
-        user = db.users.find_one(ObjectId(uuid))
+def handle_code(uuid, code, passhash):
+    user = db.users.find_one(ObjectId(uuid))
+    if check_password(db, passhash, uuid):
         current_index = user["current_index"]
         if current_index == 14:
             hat = add_hat(uuid)
@@ -270,90 +183,45 @@ def handle_code(uuid, code):
             return {"status": "success", "clues": current_clues(uuid), "newhat": hat}
         else:
             return {"status": "failed"}
-    except Exception as e:
-        print(e)
+    else:
         return {"status": "failed"}
 
 
-def login(email):
-    try:
-        user = db.users.find_one({"email": email})
-        if user == None:
-            return {"status": "failed"}
-        uuid = str(user["_id"])
-        if user["path"][0]["start"] == None:
-            initialize_location(uuid)
-        return {"status": "success", "uuid": uuid}
-    except Exception as e:
-        print(e)
+def login(email, passhash):
+    user = db.users.find_one({"email": email})
+    pprint(user)
+    if user == None:
         return {"status": "failed"}
-
-
-def clue2_time(uuid):
-    try:
-        user = db.users.find_one({"_id": ObjectId(uuid)})
-        current_index = user["current_index"]
-        start = user["path"][current_index]["start"]
-        clue_time = round((start + timedelta(minutes=2, hours=-4)).timestamp())
-        """print(
-            f"start: {start.timestamp()}, clue 2 at: {clue_time}, current time: {datetime.now().timestamp()}"
-        )
-        """
-        return {
-            "status": "success",
-            "clue2time": round((start + timedelta(minutes=2, hours=-4)).timestamp()),
-        }
-    except Exception as e:
-        print(e)
+    uuid = str(user["_id"])
+    if user["passhash"] != passhash:
         return {"status": "failed"}
+    return {"status": "success", "uuid": uuid}
 
 
 def add_hat(uuid):
-    try:
-        user = db["users"].find_one({"_id": ObjectId(uuid)})
-        cur_hats = user["hats"]
-        random.shuffle(hat_urls)
-        for hat in hat_urls:
-            if hat not in cur_hats:
-                db.users.update({"_id": ObjectId(uuid)}, {"$push": {"hats": hat}})
-                return hat
-                break
-    except Exception as e:
-        print(e)
-        return {"status": "failed"}
+    user = db["users"].find_one({"_id": ObjectId(uuid)})
+    cur_hats = user["hats"]
+    random.shuffle(hat_urls)
+    for hat in hat_urls:
+        if hat not in cur_hats:
+            db.users.update({"_id": ObjectId(uuid)}, {"$push": {"hats": hat}})
+            return hat
+            break
 
 
 def get_hats(uuid):
-    try:
-        user = db.users.find_one({"_id": ObjectId(uuid)})
-        return {"status": "success", "hats": user["hats"]}
-    except Exception as e:
-        print(e)
-        return {"status": "failed"}
+    user = db.users.find_one({"_id": ObjectId(uuid)})
+    return {"status": "success", "hats": user["hats"]}
 
 
 def get_game_info():
-    try:
-        endtime = db.endtime.find_one({})
-        return {
-            "status": "success",
-            "helpline": "765-586-3986",
-            "endtime": endtime["end"],
-        }
-    except Exception as e:
-        print(e)
-        return {"status": "failed"}
+    endtime = db.endtime.find_one({})
+    return {
+        "status": "success",
+        "helpline": "765-586-3986",
+        "endtime": "The End of Band Camp",
+    }
 
 
-def update_endtime(
-    new_day,
-    new_hour,
-    new_minute,
-):
-    try:
-        EST = pytz.timezone("US/Michigan")
-        t = datetime(2021, 5, new_day, new_hour, new_minute)
-        db.endtime.update_one({}, {"$set": {"end": t}})
-    except Exception as e:
-        print(e)
-        return {"status": "failed"}
+def make_error():
+    raise Exception("big bad error")

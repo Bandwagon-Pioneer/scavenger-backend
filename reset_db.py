@@ -7,10 +7,7 @@ db.db.users.delete_many({})
 
 with open("ordered_ppl.txt") as ppl:
     data = json.load(ppl)
+    i = 0
     for person in data["people"]:
-        add_user(
-            db.db,
-            person["email"],
-            person["name"],
-            None,
-        )
+        add_user(db.db, person["email"], person["name"], None, i=i)
+        i += 1
