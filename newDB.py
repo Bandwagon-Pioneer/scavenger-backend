@@ -129,7 +129,7 @@ def login(email, passhash):
 
 
 def req_auth(uuid, passhash):
-    user = db.users.find_one({"_id": uuid})
+    user = db.users.find_one({"_id": ObjectId(uuid)})
     pprint(user)
     if user == None:
         return False

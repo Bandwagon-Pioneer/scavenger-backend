@@ -79,21 +79,33 @@ def make_match():
         queue = queue[1:].append(queue[0])
 
 
-@app.route("/api/close-match/uuid=<uuid>")
-def close_match(uuid):
+@app.route("/api/close-match/uuid=<uuid>/passhash=<passhash>")
+def close_match(uuid, passhash):
     # test here, move to newAPI.py
     # $set current_partner: None
+    """
+    puts answer into user's
+    """
     pass
 
 
-@app.route("/api/join-matchmaking/uuid=<uuid>")
-def join_match_making(uuid):
-    partner_history = newDB.db["users"].find_one(ObjectId(uuid))["partner_history"]
-    # (uuid, partner_history)
-    if (ObjectId(uuid), partner_history) not in queue:
-        queue.append((ObjectId(uuid), partner_history))
-        return {"status": "success"}
+@app.route("/api/join-matchmaking/uuid=<uuid>/passhash=<passhash>")
+def join_match_making(uuid, passhash):
+    if newDB.req_auth(uuid, passhash):
+        print("join match auth success")
+        partner_history = newDB.db["users"].find_one(ObjectId(uuid))["partner_history"]
+        # (uuid, partner_history)
+        if (ObjectId(uuid), partner_history) not in queue:
+            print("not in queue")
+            queue.append((ObjectId(uuid), partner_history))
+            return {"status": "success"}
     return {"status": "failure"}
+
+
+def clear_all_partner_hists():
+    newDB.db.users.update_many({}, {"$pop": {"partner_history": 1}})
+    newDB.db.users.update_many({}, {"$set": {"current_partner": None}})
+    newDB.db.users.update_many({}, {"$set": {"current_prompt": None}})
 
 
 @app.route("/api/cancel-match/uuid=<uuid>/passhash=<passhash>")
@@ -120,12 +132,14 @@ def cancel_match(uuid, passhash):
         newDB.db.users.update_one(
             {"_id": ObjectId(prev_partner)}, {"$pop": {"partner_history": 1}}
         )
+        return {"status": "success"}
+    return {"status": "failed"}
 
 
 @app.route("/api/current-match-info/uuid=<uuid>")
 def current_match_info(uuid):
+    print("queue = ", queue)
     """
-
     make matches in here
 
     will give current info on match
@@ -133,8 +147,8 @@ def current_match_info(uuid):
     print("making match")
     try:
         make_match()
-    except:
-        pass
+    except Exception as e:
+        print(e)
     user = newDB.db.users.find_one({"_id": ObjectId(uuid)})
     return {
         "status": "success",
