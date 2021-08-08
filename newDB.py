@@ -68,6 +68,8 @@ def add_user(db, email, name, i):
             "hats": [],
             "partner_history": [],  # uuid's of previous partners
             "submission_history": [],  # id's of submission cards
+            "current_prompt": None,
+            "current_answer": None,
         }
     )
 
@@ -86,13 +88,16 @@ def add_submission(db, uuid1, uuid2, submission):
     )
 
 
+# finish likes/dislikes by checking if user has already liked/disliked or not, and if in either don't allow
 def like_submission(db, uuid, u_sub_id):
-    db["submissions"].update_one(
-        {"_id": ObjectId(u_sub_id)}, {"$push": {"likes": ObjectId(uuid)}}
-    )
-    db["submissions"].update_one(
-        {"_id": ObjectId(u_sub_id)}, {"$inc": {"num_o_likes": 1}}
-    )
+    likes_list = db["submissions"].find_one({"_id": ObjectId(u_sub_id)})["likes"]
+    if ObjectId(uuid) not in likes_list:
+        db["submissions"].update_one(
+            {"_id": ObjectId(u_sub_id)}, {"$push": {"likes": ObjectId(uuid)}}
+        )
+        db["submissions"].update_one(
+            {"_id": ObjectId(u_sub_id)}, {"$inc": {"num_o_likes": 1}}
+        )
 
 
 def dislike_submission(db, uuid, u_sub_id):
@@ -102,6 +107,9 @@ def dislike_submission(db, uuid, u_sub_id):
     db["submissions"].update_one(
         {"_id": ObjectId(u_sub_id)}, {"$inc": {"num_o_dislikes": 1}}
     )
+
+
+# add unlike and un-dislike
 
 
 def get_hats(uuid):
@@ -120,6 +128,16 @@ def login(email, passhash):
     return {"status": "success", "uuid": uuid}
 
 
+def req_auth(uuid, passhash):
+    user = db.users.find_one({"_id": uuid})
+    pprint(user)
+    if user == None:
+        return False
+    if user["passhash"] != passhash:
+        return False
+    return True
+
+
 def add_hat(uuid):
     user = db["users"].find_one({"_id": ObjectId(uuid)})
     cur_hats = user["hats"]
@@ -129,6 +147,11 @@ def add_hat(uuid):
             db.users.update({"_id": ObjectId(uuid)}, {"$push": {"hats": hat}})
             return hat
             break
+
+
+def get_match(uuid):
+    user = db["users"].find_one({"_id": ObjectId(uuid)})
+    partner = db["users"].find_one({"_id": ObjectId(user["current_partner"])})
 
 
 def get_rank(uuid):

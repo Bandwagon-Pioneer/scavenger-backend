@@ -12,6 +12,14 @@ app.config["DEBUG"] = True
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 
+@app.route("/api/close-match")
+def close_match():
+    # will check for parter's submission, if partner submission == None, will wait,
+    # elif partner submission != own submission: remove both submissions and say try again
+    # elif partner submission == own submission: post submission, give points, and give next partners
+    pass
+
+
 # get_leaderboard -> [{"name1", score}, {"name2", score}]
 @app.route("/api/leaderboard")
 def leaderboard():
