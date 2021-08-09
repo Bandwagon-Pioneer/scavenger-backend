@@ -3,7 +3,7 @@ from flask import request, jsonify
 from flask_cors import CORS, cross_origin
 import flask_cors
 from datetime import datetime
-import db
+import newDB
 import random
 
 
@@ -20,10 +20,20 @@ def close_match():
     pass
 
 
+@app.route("/api/submission-feed")
+def submission_feed():
+    return {"status": "success", "submission_feed": newDB.get_submission_feed()}
+
+
+@app.route("/api/like-submission")
+def like_submission():
+    pass
+
+
 # get_leaderboard -> [{"name1", score}, {"name2", score}]
 @app.route("/api/leaderboard")
 def leaderboard():
-    return {"leaderboard": db.get_leaderboard()}
+    return {"leaderboard": newDB.get_leaderboard()}
 
 
 # submit: if on 14th or less node then returns
@@ -37,23 +47,12 @@ def leaderboard():
   "status": "success"
 }
 """
-# if on 15th node then returns
-# {"status" : "completed"}
-@app.route("/api/submit/uuid=<uuid>/passhash=<passhash>/code=<code>")
-def submit_code(uuid, code, passhash):
-    return db.handle_code(uuid, code)
-
-
-# login (email) -> ObjectId #remember to index on email, as well to make login fast!
-@app.route("/api/login/email=<email>/passhash=<passhash>")
-def login(email, passhash):
-    return db.login(email, passhash)
 
 
 # clues for current-location (uuid) -> (clue1, clue2), hat_links
 @app.route("/api/current-clues/uuid=<uuid>, passhash=<passhash>")
 def current_clues(uuid, passhash):
-    return db.current_clues(uuid)
+    return newDB.current_clues(uuid)
 
 
 # hat_links: returns
@@ -71,20 +70,13 @@ def current_clues(uuid, passhash):
 @app.route("/api/hats/uuid=<uuid>,passhash=<passhash>")
 def hats(uuid, passhash):
     # is passhash necessary for this function???
-    return db.get_hats(uuid)
+    return newDB.get_hats(uuid)
 
 
 # rank-and-farthest: returns {"_id": id, "rank": rank, "farthest":nodes_reached}
-@app.route("/api/rank-and-farthest/uuid=<uuid>")
+@app.route("/api/rank/uuid=<uuid>")
 def rank(uuid):
-    return db.get_rank_and_farthest(uuid)
-
-
-# utc time "start" +3 minutes
-@app.route("/api/clue2-time/uuid=<uuid>")
-def clue2_time(uuid):
-    # may be obsolete??
-    return db.clue2_time(uuid)
+    return newDB.get_rank(uuid)
 
 
 # house points count
@@ -96,7 +88,7 @@ def house_points():
 # sends helpline (Angie's phone number) and the end time of the game
 @app.route("/api/game-info")
 def game_info():
-    return db.get_game_info()
+    return newDB.get_game_info()
 
 
 @app.errorhandler(Exception)

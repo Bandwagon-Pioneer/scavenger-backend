@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta
 from haversine import haversine, Unit
 import pytz
 import requests
+import time
 
 client = MongoClient("localhost", 27017)
 
@@ -81,11 +82,22 @@ def add_submission(db, uuid1, uuid2, submission, prompt):
             "uuid2": ObjectId(uuid2),
             "prompt": prompt,
             "submission": submission,
+            "time_submitted": time.time(),
             "num_o_likes": 0,  # = len(likes)
             "num_o_dislikes": 0,  # = len(dislikes)
             "likes": [],  # uuids
             "dislikes": [],  # uuids
         }
+    )
+
+
+def get_submission_feed():
+    submissions = db["submissions"].find({})
+    submissions = list(submissions)
+    return sorted(
+        submissions,
+        key=lambda elem: (elem["num_o_likes"] + elem["num_o_dislikes"])
+        / (0.1 * (time.time() - elem["time_submitted"]) + 0.001),
     )
 
 
