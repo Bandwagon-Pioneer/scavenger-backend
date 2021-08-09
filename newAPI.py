@@ -32,7 +32,7 @@ def like_submission(uuid, passhash, subid):
 
 
 @app.route("/api/dislike-submission/uuid=<uuid>/passhash=<passhash>/subid=<subid>")
-def like_submission(uuid, passhash, subid):
+def dislike_submission(uuid, passhash, subid):
     if newDB.req_auth(uuid, passhash):
         newDB.dislike_submission(newDB.db, uuid, subid)
         return {"status": "success"}
