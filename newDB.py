@@ -103,8 +103,9 @@ def get_submission_feed():
 
 # finish likes/dislikes by checking if user has already liked/disliked or not, and if in either don't allow
 def like_submission(db, uuid, u_sub_id):
+    dislikes_list = db["submissions"].find_one({"_id": ObjectId(u_sub_id)})["dislikes"]
     likes_list = db["submissions"].find_one({"_id": ObjectId(u_sub_id)})["likes"]
-    if ObjectId(uuid) not in likes_list:
+    if ObjectId(uuid) not in likes_list and ObjectId(uuid) not in dislikes_list:
         db["submissions"].update_one(
             {"_id": ObjectId(u_sub_id)}, {"$push": {"likes": ObjectId(uuid)}}
         )
@@ -114,15 +115,42 @@ def like_submission(db, uuid, u_sub_id):
 
 
 def dislike_submission(db, uuid, u_sub_id):
-    db["submissions"].update_one(
-        {"_id": ObjectId(u_sub_id)}, {"$push": {"dislikes": ObjectId(uuid)}}
-    )
-    db["submissions"].update_one(
-        {"_id": ObjectId(u_sub_id)}, {"$inc": {"num_o_dislikes": 1}}
-    )
+    dislikes_list = db["submissions"].find_one({"_id": ObjectId(u_sub_id)})["dislikes"]
+    likes_list = db["submissions"].find_one({"_id": ObjectId(u_sub_id)})["likes"]
+    if ObjectId(uuid) not in dislikes_list and ObjectId(uuid) not in likes_list:
+        db["submissions"].update_one(
+            {"_id": ObjectId(u_sub_id)}, {"$push": {"dislikes": ObjectId(uuid)}}
+        )
+        db["submissions"].update_one(
+            {"_id": ObjectId(u_sub_id)}, {"$inc": {"num_o_dislikes": 1}}
+        )
 
 
 # add unlike and un-dislike
+def unlike_submission(db, uuid, u_sub_id):
+    if (
+        ObjectId(uuid)
+        in db["submissions"].find_one({"_id": ObjectId(u_sub_id)})["likes"]
+    ):
+        db["submissions"].update_one(
+            {"_id": ObjectId(u_sub_id)}, {"$pull": {"likes": ObjectId(uuid)}}
+        )
+        db["submissions"].update_one(
+            {"_id": ObjectId(u_sub_id)}, {"$inc": {"num_o_likes": -1}}
+        )
+
+
+def un_dislike_submission(db, uuid, u_sub_id):
+    if (
+        ObjectId(uuid)
+        in db["submissions"].find_one({"_id": ObjectId(u_sub_id)})["dislikes"]
+    ):
+        db["submissions"].update_one(
+            {"_id": ObjectId(u_sub_id)}, {"$pull": {"dislikes": ObjectId(uuid)}}
+        )
+        db["submissions"].update_one(
+            {"_id": ObjectId(u_sub_id)}, {"$inc": {"num_o_dislikes": -1}}
+        )
 
 
 def get_hats(uuid):
