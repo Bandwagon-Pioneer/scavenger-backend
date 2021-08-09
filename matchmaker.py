@@ -241,10 +241,12 @@ def current_match_info(uuid):
     except Exception as e:
         print(e)
     user = newDB.db.users.find_one({"_id": ObjectId(uuid)})
+    partner_name = newDB.db.users.find_one({"_id": user["current_partner"]})["name"]
     return {
         "status": "success",
         "matched": True if user["current_partner"] != None else False,
-        "current_partner": str(user["current_partner"]),
+        "current_partner_uuid": str(user["current_partner"]),
+        "current_partner_name": str(partner_name),
         "current_prompt": str(user["current_prompt"]),
     }
 
