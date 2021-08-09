@@ -156,6 +156,7 @@ def close_match(uuid, passhash):
             newDB.db["users"].update_one(
                 {"_id": ObjectId(uuid)}, {"$set": {"current_partner": None}}
             )
+            newDB.score(uuid)
             return {"status": "success", "message": "answers are equivalent"}
         elif partner["current_answer"].lower() != submission.lower():
             # set both current_answers to None, and return {"status":"success","message": "mismatched answers, put in the same answer as partner"}

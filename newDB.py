@@ -91,6 +91,13 @@ def add_submission(db, uuid1, uuid2, submission, prompt):
     )
 
 
+def score(uuid):
+    user = db.users.find_one({"_id": ObjectId(uuid)})
+    s = len(user["submission_history"])
+    db.users.update_one({"_id": ObjectId(uuid)}, {"$set": {"score": s}})
+    return s
+
+
 def get_submission_feed():
     submissions = db["submissions"].find({})
     submissions = list(submissions)
@@ -195,6 +202,11 @@ def add_hat(uuid):
 def get_match(uuid):
     user = db["users"].find_one({"_id": ObjectId(uuid)})
     partner = db["users"].find_one({"_id": ObjectId(user["current_partner"])})
+
+
+def get_leaderboard():
+    active_users = list(db.users.find({"active_user": True}))
+    return sorted(active_users, key=lambda user: user["score"])
 
 
 def get_rank(uuid):

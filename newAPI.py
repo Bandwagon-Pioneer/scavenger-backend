@@ -58,7 +58,7 @@ def undislike_submission(uuid, passhash, subid):
 # get_leaderboard -> [{"name1", score}, {"name2", score}]
 @app.route("/api/leaderboard")
 def leaderboard():
-    return {"leaderboard": newDB.get_leaderboard()}
+    return {"status": "success", "leaderboard": newDB.get_leaderboard()}
 
 
 # submit: if on 14th or less node then returns
