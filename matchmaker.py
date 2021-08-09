@@ -42,41 +42,42 @@ def make_match():
     """
     does one cycle of the above defined algorithm
     """
-    init_user = queue[0]
-    prompt = random.choice(prompts)
-    print(prompt)
-    for user in queue[1:]:
-        # change to if queue[0][0] not in user[1][:-1]: if you want to only look at very recent history
-        if queue[0][0] not in user[1]:
+    if len(queue) > 1:
+        init_user = queue[0]
+        prompt = random.choice(prompts)
+        print(prompt)
+        for user in queue[1:]:
+            # change to if queue[0][0] not in user[1][:-1]: if you want to only look at very recent history
+            if queue[0][0] not in user[1]:
 
-            # if first person uuid not in history of user
-            newDB.db["users"].update_one(
-                {"_id": queue[0][0]}, {"$set": {"current_partner": user[0]}}
-            )
-            newDB.db["users"].update_one(
-                {"_id": queue[0][0]}, {"$push": {"partner_history": user[0]}}
-            )  # set current partner as user2 for user1 and add user2 to partner history
+                # if first person uuid not in history of user
+                newDB.db["users"].update_one(
+                    {"_id": queue[0][0]}, {"$set": {"current_partner": user[0]}}
+                )
+                newDB.db["users"].update_one(
+                    {"_id": queue[0][0]}, {"$push": {"partner_history": user[0]}}
+                )  # set current partner as user2 for user1 and add user2 to partner history
 
-            newDB.db["users"].update_one(
-                {"_id": queue[0][0]}, {"$set": {"current_prompt": prompt}}
-            )
+                newDB.db["users"].update_one(
+                    {"_id": queue[0][0]}, {"$set": {"current_prompt": prompt}}
+                )
 
-            newDB.db["users"].update_one(
-                {"_id": user[0]}, {"$set": {"current_partner": queue[0][0]}}
-            )  # set current partner as user1 for user2 and add user1 to partner history
+                newDB.db["users"].update_one(
+                    {"_id": user[0]}, {"$set": {"current_partner": queue[0][0]}}
+                )  # set current partner as user1 for user2 and add user1 to partner history
 
-            newDB.db["users"].update_one(
-                {"_id": user[0]}, {"$push": {"partner_history": queue[0][0]}}
-            )
+                newDB.db["users"].update_one(
+                    {"_id": user[0]}, {"$push": {"partner_history": queue[0][0]}}
+                )
 
-            newDB.db["users"].update_one(
-                {"_id": user[0]}, {"$set": {"current_prompt": prompt}}
-            )
-            queue.remove(queue[0])
-            queue.remove(user)
-            break
-    if init_user in queue:
-        queue = queue[1:].append(queue[0])
+                newDB.db["users"].update_one(
+                    {"_id": user[0]}, {"$set": {"current_prompt": prompt}}
+                )
+                queue.remove(queue[0])
+                queue.remove(user)
+                break
+        if init_user in queue:
+            queue = queue[1:].append(queue[0])
 
 
 @app.route("/api/close-match/uuid=<uuid>/passhash=<passhash>", methods=["POST"])
@@ -178,6 +179,8 @@ def close_match(uuid, passhash):
 
 @app.route("/api/join-matchmaking/uuid=<uuid>/passhash=<passhash>")
 def join_match_making(uuid, passhash):
+    global queue
+    print(queue)
     if newDB.req_auth(uuid, passhash):
         print("join match auth success")
         partner_history = newDB.db["users"].find_one(ObjectId(uuid))["partner_history"]
@@ -225,6 +228,7 @@ def cancel_match(uuid, passhash):
 
 @app.route("/api/current-match-info/uuid=<uuid>")
 def current_match_info(uuid):
+    global queue
     print("queue = ", queue)
     """
     make matches in here
@@ -239,6 +243,7 @@ def current_match_info(uuid):
     user = newDB.db.users.find_one({"_id": ObjectId(uuid)})
     return {
         "status": "success",
+        "matched": True if user["current_partner"] != None else False,
         "current_partner": str(user["current_partner"]),
         "current_prompt": str(user["current_prompt"]),
     }
