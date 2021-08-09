@@ -79,14 +79,101 @@ def make_match():
         queue = queue[1:].append(queue[0])
 
 
-@app.route("/api/close-match/uuid=<uuid>/passhash=<passhash>")
+@app.route("/api/close-match/uuid=<uuid>/passhash=<passhash>", methods=["POST"])
 def close_match(uuid, passhash):
     # test here, move to newAPI.py
     # $set current_partner: None
     """
-    puts answer into user's
+    data = {
+        "submission": "bablbalsbfusgv absdiabgv basfbia funny business kajbsfiabg abaiusdfb."
+    }
     """
-    pass
+    data = request.json
+    if newDB.req_auth(uuid, passhash):
+        submission = data["submission"]
+        # newDB["submissions"].insert_one
+        newDB.db["users"].update_one(
+            {"_id": ObjectId(uuid)},
+            {"$set": {"current_answer": submission}},
+        )
+        user = newDB.db["users"].find_one({"_id": ObjectId(uuid)})
+        partner = newDB.db["users"].find_one({"_id": user["current_partner"]})
+        if partner["current_answer"] == None:
+            return {"status": "success", "message": "waiting on partner"}
+        elif partner["current_answer"].lower() == submission.lower():
+            newDB.add_submission(
+                db=newDB.db,
+                uuid1=ObjectId(uuid),
+                uuid2=user["current_partner"],  # uuid
+                submission=submission,
+                prompt=user["current_prompt"],
+            )
+            # add points to both users??
+            # then set current partner to None
+            # and add the submission to his history
+            newDB.db["users"].update_one(
+                {"_id": ObjectId(uuid)},
+                {
+                    "$push": {
+                        "submission_history": {
+                            "prompt": user["current_prompt"],
+                            "submission": submission,
+                            "user1": ObjectId(uuid),
+                            "user2": user["current_partner"],
+                        }
+                    }
+                },
+            )
+            newDB.db["users"].update_one(
+                {"_id": user["current_partner"]},
+                {
+                    "$push": {
+                        "submission_history": {
+                            "prompt": user["current_prompt"],
+                            "submission": submission,
+                            "user1": ObjectId(uuid),
+                            "user2": user["current_partner"],
+                        }
+                    }
+                },
+            )
+            newDB.db["users"].update_one(
+                {"_id": ObjectId(uuid)}, {"$set": {"current_prompt": None}}
+            )
+            newDB.db["users"].update_one(
+                {"_id": user["current_partner"]}, {"$set": {"current_prompt": None}}
+            )
+            newDB.db["users"].update_one(
+                {"_id": ObjectId(uuid)}, {"$set": {"current_answer": None}}
+            )
+            newDB.db["users"].update_one(
+                {"_id": user["current_partner"]}, {"$set": {"current_answer": None}}
+            )
+            newDB.db["users"].update_one(
+                {"_id": user["current_partner"]}, {"$set": {"current_partner": None}}
+            )
+            newDB.db["users"].update_one(
+                {"_id": ObjectId(uuid)}, {"$set": {"current_partner": None}}
+            )
+            return {"status": "success", "message": "answers are equivalent"}
+        elif partner["current_answer"].lower() != submission.lower():
+            # set both current_answers to None, and return {"status":"success","message": "mismatched answers, put in the same answer as partner"}
+            newDB.db["users"].update_one(
+                {"_id": ObjectId(uuid)}, {"$set": {"current_answer": None}}
+            )
+            newDB.db["users"].update_one(
+                {"_id": partner["_id"]}, {"$set": {"current_answer": None}}
+            )
+            return {
+                "status": "success",
+                "message": "mismatched answers, put in the same answer as partner",
+            }
+        else:
+            return {
+                "status": "failed",
+                "message": "authenticated fine, but something went wrong after that",
+            }
+    return {"status": "failed", "message": "you at least are still on the endpoint"}
 
 
 @app.route("/api/join-matchmaking/uuid=<uuid>/passhash=<passhash>")
@@ -157,10 +244,13 @@ def current_match_info(uuid):
     }
 
 
+"""
+UNCOMMENT ME!!!!!!!
+
 @app.errorhandler(Exception)
 def error_handled(e):
     return {"status": "failed"}
-
+"""
 
 if __name__ == "__main__":
     app.run()

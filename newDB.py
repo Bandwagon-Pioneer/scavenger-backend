@@ -74,11 +74,12 @@ def add_user(db, email, name, i):
     )
 
 
-def add_submission(db, uuid1, uuid2, submission):
+def add_submission(db, uuid1, uuid2, submission, prompt):
     db["submissions"].insert_one(
         {
             "uuid1": ObjectId(uuid1),
             "uuid2": ObjectId(uuid2),
+            "prompt": prompt,
             "submission": submission,
             "num_o_likes": 0,  # = len(likes)
             "num_o_dislikes": 0,  # = len(dislikes)
