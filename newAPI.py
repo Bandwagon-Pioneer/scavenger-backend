@@ -1,3 +1,4 @@
+from hashlib import new
 import flask
 from flask import request, jsonify
 from flask_cors import CORS, cross_origin
@@ -17,22 +18,25 @@ def login(email, passhash):
     return newDB.login(email, passhash)
 
 
-@app.route("/api/close-match")
-def close_match():
-    # will check for parter's submission, if partner submission == None, will wait,
-    # elif partner submission != own submission: remove both submissions and say try again
-    # elif partner submission == own submission: post submission, give points, and give next partners
-    pass
-
-
 @app.route("/api/submission-feed")
 def submission_feed():
     return {"status": "success", "submission_feed": newDB.get_submission_feed()}
 
 
-@app.route("/api/like-submission")
-def like_submission():
-    pass
+@app.route("/api/like-submission/uuid=<uuid>/passhash=<passhash>/subid=<subid>")
+def like_submission(uuid, passhash, subid):
+    if newDB.req_auth(uuid, passhash):
+        newDB.like_submission(newDB.db, uuid, subid)
+        return {"status": "success"}
+    return {"status": "failure"}
+
+
+@app.route("/api/dislike-submission/uuid=<uuid>/passhash=<passhash>/subid=<subid>")
+def like_submission(uuid, passhash, subid):
+    if newDB.req_auth(uuid, passhash):
+        newDB.dislike_submission(newDB.db, uuid, subid)
+        return {"status": "success"}
+    return {"status": "failure"}
 
 
 # get_leaderboard -> [{"name1", score}, {"name2", score}]
