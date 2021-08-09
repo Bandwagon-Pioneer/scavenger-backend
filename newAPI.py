@@ -11,9 +11,11 @@ app = flask.Flask(__name__)
 app.config["DEBUG"] = True
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
+
 @app.route("/api/login/email=<email>/passhash=<passhash>")
 def login(email, passhash):
     return newDB.login(email, passhash)
+
 
 @app.route("/api/close-match")
 def close_match():
@@ -100,4 +102,4 @@ def error_handled(e):
 
 
 if __name__ == "__main__":
-    app.run(host='192.168.0.14')
+    app.run(host="192.168.0.14")
