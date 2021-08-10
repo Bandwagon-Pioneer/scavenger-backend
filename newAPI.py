@@ -59,7 +59,7 @@ def unlike_submission(uuid, passhash, subid):
     return {"status": "failure"}
 
 
-@app.route("/api/un-dislike-submission/uuid=<uuid>/passhash=<passhash>/subid=<subid>")
+@app.route("/api/undislike-submission/uuid=<uuid>/passhash=<passhash>/subid=<subid>")
 def undislike_submission(uuid, passhash, subid):
     if newDB.req_auth(uuid, passhash):
         newDB.un_dislike_submission(newDB.db, uuid, subid)

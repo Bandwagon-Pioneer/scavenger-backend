@@ -203,7 +203,7 @@ def login(email, passhash):
         return {"status": "failed"}
     if user["active_user"] == False:
         db["users"].update_one({"email": email}, {"$set": {"active_user": True}})
-    return {"status": "success", "uuid": uuid}
+    return {"status": "success", "uuid": uuid, "is_moderator": user["is_moderator"]}
 
 
 def req_auth(uuid, passhash):

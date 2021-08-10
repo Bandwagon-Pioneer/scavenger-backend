@@ -36,7 +36,7 @@ def make_match():
     """
     given a,b,c,d,e,f,...
 
-    take "a" and try match with everyone down the line until either "a" match is made and their both off of the queue, 
+    take "a" and try match with everyone down the line until either "a" match is made and they're both off of the queue, 
     or "a" has no friends and goes to the back of the queue
 
     maybe have shutoff switch after one full cycle if no new ppl
