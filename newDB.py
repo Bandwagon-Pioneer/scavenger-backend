@@ -1,3 +1,4 @@
+from re import sub
 import pymongo
 from pymongo import MongoClient
 import random
@@ -61,6 +62,7 @@ def add_user(db, email, name, i):
         {
             "email": email,
             "name": name,
+            "is_moderator": False,
             "password": fetch_password(i),
             "passhash": hashlib.sha256(fetch_password(i).encode("ascii")).hexdigest(),
             "active_user": False,  # change to true on first sign in
@@ -75,6 +77,15 @@ def add_user(db, email, name, i):
     )
 
 
+def moderator_remove_submission(mod_uuid, sub_id):
+    # check if mod_uuid is actually a mod
+    user = db.users.find_one({"_id": ObjectId(mod_uuid)})
+    if user["is_moderator"] == True:
+        db.submissions.update_one(
+            {"_id": ObjectId(sub_id)}, {"$set": {"is_inappropriate": True}}
+        )
+
+
 def add_submission(db, uuid1, uuid2, submission, prompt):
     db["submissions"].insert_one(
         {
@@ -82,6 +93,7 @@ def add_submission(db, uuid1, uuid2, submission, prompt):
             "uuid2": ObjectId(uuid2),
             "prompt": prompt,
             "submission": submission,
+            "is_inappropriate": False,
             "time_submitted": time.time(),
             "num_o_likes": 0,  # = len(likes)
             "num_o_dislikes": 0,  # = len(dislikes)
@@ -101,11 +113,27 @@ def score(uuid):
 def get_submission_feed():
     submissions = db["submissions"].find({})
     submissions = list(submissions)
-    return sorted(
+    submissions = sorted(
         submissions,
-        key=lambda elem: (elem["num_o_likes"] + elem["num_o_dislikes"])
-        / (0.1 * (time.time() - elem["time_submitted"]) + 0.001),
+        key=lambda elem: (0.1 * (time.time() - elem["time_submitted"]) + 0.001)
+        / (0.01 + elem["num_o_likes"] + elem["num_o_dislikes"]),
     )
+    results = []
+    for sub in submissions:
+        if sub["is_inappropriate"] != True:
+            sub["_id"] = str(sub["_id"])
+            sub["uuid1"] = str(sub["uuid1"])
+            sub["uuid2"] = str(sub["uuid2"])
+            likes = []
+            for l in sub["likes"]:
+                likes.append(str(l))
+            sub["likes"] = likes
+            dislikes = []
+            for d in sub["dislikes"]:
+                likes.append(str(d))
+            sub["dislikes"] = dislikes
+            results.append(sub)
+    return results
 
 
 # finish likes/dislikes by checking if user has already liked/disliked or not, and if in either don't allow
@@ -206,7 +234,14 @@ def get_match(uuid):
 
 def get_leaderboard():
     active_users = list(db.users.find({"active_user": True}))
-    return sorted(active_users, key=lambda user: user["score"])
+    leaderboard = sorted(active_users, key=lambda user: 1 / (user["score"] + 0.01))
+    result = []
+    for l in leaderboard:
+        r = {}
+        r["name"] = l["name"]
+        r["score"] = l["score"]
+        result.append(r)
+    return result
 
 
 def get_rank(uuid):

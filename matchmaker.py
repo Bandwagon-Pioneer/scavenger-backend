@@ -9,7 +9,7 @@ import newDB
 
 # completely independent of db and api. different service running and being called
 
-with open("CAHpromptsUnvetted.txt", "r") as CAHprompts:
+with open("CAHquestionsrevised.txt", "r") as CAHprompts:
     prompts = []
     for line in CAHprompts.readlines():
         prompts.append(line)
@@ -18,7 +18,14 @@ with open("CAHpromptsUnvetted.txt", "r") as CAHprompts:
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
-cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
+cors = CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": ["*", "bandwagon.ngrok.io", "https://05f236b70293.ngrok.io/"]
+        }
+    },
+)
 queue = []
 
 
@@ -45,7 +52,7 @@ def make_match():
     if len(queue) > 1:
         init_user = queue[0]
         prompt = random.choice(prompts)
-        print(prompt)
+        # print(prompt)
         for user in queue[1:]:
             # change to if queue[0][0] not in user[1][:-1]: if you want to only look at very recent history
             if queue[0][0] not in user[1]:
@@ -77,7 +84,8 @@ def make_match():
                 queue.remove(user)
                 break
         if init_user in queue:
-            queue = queue[1:].append(queue[0])
+            queue.append(queue[0])
+            queue.pop(0)
 
 
 @app.route("/api/close-match/uuid=<uuid>/passhash=<passhash>", methods=["POST"])
@@ -91,6 +99,7 @@ def close_match(uuid, passhash):
     """
     data = request.json
     if newDB.req_auth(uuid, passhash):
+        print("close match authenticated correctly")
         submission = data["submission"]
         # newDB["submissions"].insert_one
         newDB.db["users"].update_one(
@@ -157,6 +166,7 @@ def close_match(uuid, passhash):
                 {"_id": ObjectId(uuid)}, {"$set": {"current_partner": None}}
             )
             newDB.score(uuid)
+            newDB.score(str(partner["_id"]))
             return {"status": "success", "message": "answers are equivalent"}
         elif partner["current_answer"].lower() != submission.lower():
             # set both current_answers to None, and return {"status":"success","message": "mismatched answers, put in the same answer as partner"}
@@ -227,6 +237,9 @@ def cancel_match(uuid, passhash):
     return {"status": "failed"}
 
 
+from pprint import pprint
+
+
 @app.route("/api/current-match-info/uuid=<uuid>")
 def current_match_info(uuid):
     global queue
@@ -242,14 +255,24 @@ def current_match_info(uuid):
     except Exception as e:
         print(e)
     user = newDB.db.users.find_one({"_id": ObjectId(uuid)})
-    partner_name = newDB.db.users.find_one({"_id": user["current_partner"]})["name"]
-    return {
-        "status": "success",
-        "matched": True if user["current_partner"] != None else False,
-        "current_partner_uuid": str(user["current_partner"]),
-        "current_partner_name": str(partner_name),
-        "current_prompt": str(user["current_prompt"]),
-    }
+    # for some reason match
+    if user["current_partner"] != None:
+        partner = newDB.db.users.find_one({"_id": user["current_partner"]})
+        return {
+            "status": "success",
+            "matched": True if user["current_partner"] != None else False,
+            "current_partner_uuid": str(user["current_partner"]),
+            "current_partner_name": str(partner["name"]),
+            "current_prompt": str(user["current_prompt"]),
+        }
+    else:
+        return {
+            "status": "success",
+            "matched": True if user["current_partner"] != None else False,
+            "current_partner_uuid": None,
+            "current_partner_name": None,
+            "current_prompt": None,
+        }
 
 
 """
@@ -261,4 +284,4 @@ def error_handled(e):
 """
 
 if __name__ == "__main__":
-    app.run(port=80)
+    app.run(port=5001)

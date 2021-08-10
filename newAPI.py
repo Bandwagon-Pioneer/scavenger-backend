@@ -13,6 +13,16 @@ app.config["DEBUG"] = True
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 
+@app.route(
+    "/api/moderator-remove-post/mod-uuid=<uuid>/passhash=<passhash>/sub_id=<sub_id>"
+)
+def mod_remove_post(uuid, passhash, sub_id):
+    if newDB.req_auth(uuid, passhash):
+        newDB.moderator_remove_submission(uuid, sub_id)
+        return {"status": "success"}
+    return {"status": "success", "message": "you are not a moderator, fuck off"}
+
+
 @app.route("/api/login/email=<email>/passhash=<passhash>")
 def login(email, passhash):
     return newDB.login(email, passhash)
@@ -20,7 +30,9 @@ def login(email, passhash):
 
 @app.route("/api/submission-feed")
 def submission_feed():
-    return {"status": "success", "submission_feed": newDB.get_submission_feed()}
+    return jsonify(
+        {"status": "success", "submission_feed": newDB.get_submission_feed()}
+    )
 
 
 @app.route("/api/like-submission/uuid=<uuid>/passhash=<passhash>/subid=<subid>")
