@@ -21,7 +21,7 @@ def mod_remove_post(uuid, passhash, sub_id):
     if newDB.req_auth(uuid, passhash):
         newDB.moderator_remove_submission(uuid, sub_id)
         return {"status": "success"}
-    return {"status": "success", "message": "you are not a moderator, fuck off"}
+    return {"status": "failure", "message": "you are not a moderator, fuck off"}
 
 
 @app.route("/api/login/email=<email>/passhash=<passhash>")
