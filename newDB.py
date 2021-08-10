@@ -130,7 +130,7 @@ def get_submission_feed():
             sub["likes"] = likes
             dislikes = []
             for d in sub["dislikes"]:
-                likes.append(str(d))
+                dislikes.append(str(d))
             sub["dislikes"] = dislikes
             results.append(sub)
     return results
