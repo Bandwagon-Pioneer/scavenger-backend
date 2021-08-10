@@ -194,9 +194,12 @@ def join_match_making(uuid, passhash):
     print(queue)
     if newDB.req_auth(uuid, passhash):
         print("join match auth success")
-        partner_history = newDB.db["users"].find_one(ObjectId(uuid))["partner_history"]
+        user = newDB.db["users"].find_one(ObjectId(uuid))
+        partner_history = user["partner_history"]
         # (uuid, partner_history)
-        if (ObjectId(uuid), partner_history) not in queue:
+        if (ObjectId(uuid), partner_history) not in queue and user[
+            "current_partner"
+        ] == None:
             print("not in queue")
             queue.append((ObjectId(uuid), partner_history))
             return {"status": "success"}

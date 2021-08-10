@@ -36,12 +36,8 @@ from pprint import pprint
 
 
 def fetch_password(i):
-    file_name = "passwords.pkl"
-    open_file = open(file_name, "rb")
-    loaded_list = pickle.load(open_file)
-    pword = loaded_list[i]
-    open_file.close()
-    return pword
+    random.seed(i)
+    return random.randint(10000, 99999)
 
 
 def check_password(db, passhash, uuid):
@@ -63,8 +59,10 @@ def add_user(db, email, name, i):
             "email": email,
             "name": name,
             "is_moderator": False,
-            "password": fetch_password(i),
-            "passhash": hashlib.sha256(fetch_password(i).encode("ascii")).hexdigest(),
+            "password": str(fetch_password(i)),
+            "passhash": hashlib.sha256(
+                str(fetch_password(i)).encode("ascii")
+            ).hexdigest(),
             "active_user": False,  # change to true on first sign in
             "current_partner": None,  # uuid of partner
             "score": 0,
@@ -110,12 +108,15 @@ def score(uuid):
     return s
 
 
+from math import log10
+
+
 def get_submission_feed():
     submissions = db["submissions"].find({})
     submissions = list(submissions)
     submissions = sorted(
         submissions,
-        key=lambda elem: (0.1 * (time.time() - elem["time_submitted"]) + 0.001)
+        key=lambda elem: (0.1 * log10(time.time() - elem["time_submitted"]) + 0.001)
         / (0.01 + elem["num_o_likes"] + elem["num_o_dislikes"]),
     )
     results = []
