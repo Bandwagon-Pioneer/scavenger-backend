@@ -1,21 +1,353 @@
+from hashlib import new
+from pprint import pprint
 import flask
 from flask import request, jsonify
 from flask_cors import CORS, cross_origin
 import flask_cors
 from datetime import datetime
-import db
+import newDB
 import random
-
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
-cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
+cors = CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": ["*", "bandwagon.ngrok.io", "https://05f236b70293.ngrok.io/"]
+        }
+    },
+)
+
+# completely independent of db and api. different service running and being called
+
+with open("CAHquestionsrevised.txt", "r") as CAHprompts:
+    prompts = []
+    for line in CAHprompts.readlines():
+        prompts.append(line)
+
+# print(random.choice(prompts))
+
+
+queue = []
+
+
+# make backup of queue in database
+def make_match():
+    global queue
+    global prompts
+    """
+    given a,b,c,d,e,f,...
+
+    take "a" and try match with everyone down the line until either "a" match is made and they're both off of the queue, 
+    or "a" has no friends and goes to the back of the queue
+
+    maybe have shutoff switch after one full cycle if no new ppl
+
+    ->worry about edge case of no one being compatible
+
+
+    if odd number of people have reid say on front end that that's the case and the user should get some more friends on board
+    """
+    """
+    does one cycle of the above defined algorithm
+    """
+    if len(queue) > 1:
+        init_user = queue[0]
+        prompt = random.choice(prompts)
+        # print(prompt)
+        for user in queue[1:]:
+            # change to if queue[0][0] not in user[1][:-1]: if you want to only look at very recent history
+            if queue[0][0] not in user[1]:
+
+                # if first person uuid not in history of user
+                newDB.db["users"].update_one(
+                    {"_id": queue[0][0]}, {"$set": {"current_partner": user[0]}}
+                )
+                newDB.db["users"].update_one(
+                    {"_id": queue[0][0]}, {"$push": {"partner_history": user[0]}}
+                )  # set current partner as user2 for user1 and add user2 to partner history
+
+                newDB.db["users"].update_one(
+                    {"_id": queue[0][0]}, {"$set": {"current_prompt": prompt}}
+                )
+
+                newDB.db["users"].update_one(
+                    {"_id": user[0]}, {"$set": {"current_partner": queue[0][0]}}
+                )  # set current partner as user1 for user2 and add user1 to partner history
+
+                newDB.db["users"].update_one(
+                    {"_id": user[0]}, {"$push": {"partner_history": queue[0][0]}}
+                )
+
+                newDB.db["users"].update_one(
+                    {"_id": user[0]}, {"$set": {"current_prompt": prompt}}
+                )
+                queue.remove(queue[0])
+                queue.remove(user)
+                break
+        if init_user in queue:
+            queue.append(queue[0])
+            queue.pop(0)
+
+
+@app.route("/api/close-match/uuid=<uuid>/passhash=<passhash>", methods=["POST"])
+def close_match(uuid, passhash):
+    # test here, move to newAPI.py
+    # $set current_partner: None
+    """
+    data = {
+        "submission": "bablbalsbfusgv absdiabgv basfbia funny business kajbsfiabg abaiusdfb."
+    }
+    """
+    data = request.json
+    if newDB.req_auth(uuid, passhash):
+        print("close match authenticated correctly")
+        submission = data["submission"]
+        # newDB["submissions"].insert_one
+        newDB.db["users"].update_one(
+            {"_id": ObjectId(uuid)},
+            {"$set": {"current_answer": submission}},
+        )
+        user = newDB.db["users"].find_one({"_id": ObjectId(uuid)})
+        partner = newDB.db["users"].find_one({"_id": user["current_partner"]})
+        if partner["current_answer"] == None:
+            return {"status": "success", "message": "waiting on partner"}
+        elif partner["current_answer"].lower() == submission.lower():
+            newDB.add_submission(
+                db=newDB.db,
+                uuid1=ObjectId(uuid),
+                uuid2=user["current_partner"],  # uuid
+                submission=submission,
+                prompt=user["current_prompt"],
+            )
+            # add points to both users??
+            # then set current partner to None
+            # and add the submission to his history
+            newDB.db["users"].update_one(
+                {"_id": ObjectId(uuid)},
+                {
+                    "$push": {
+                        "submission_history": {
+                            "prompt": user["current_prompt"],
+                            "submission": submission,
+                            "user1": ObjectId(uuid),
+                            "user2": user["current_partner"],
+                        }
+                    }
+                },
+            )
+            newDB.db["users"].update_one(
+                {"_id": user["current_partner"]},
+                {
+                    "$push": {
+                        "submission_history": {
+                            "prompt": user["current_prompt"],
+                            "submission": submission,
+                            "user1": ObjectId(uuid),
+                            "user2": user["current_partner"],
+                        }
+                    }
+                },
+            )
+            newDB.db["users"].update_one(
+                {"_id": ObjectId(uuid)}, {"$set": {"current_prompt": None}}
+            )
+            newDB.db["users"].update_one(
+                {"_id": user["current_partner"]}, {"$set": {"current_prompt": None}}
+            )
+            newDB.db["users"].update_one(
+                {"_id": ObjectId(uuid)}, {"$set": {"current_answer": None}}
+            )
+            newDB.db["users"].update_one(
+                {"_id": user["current_partner"]}, {"$set": {"current_answer": None}}
+            )
+            newDB.db["users"].update_one(
+                {"_id": user["current_partner"]}, {"$set": {"current_partner": None}}
+            )
+            newDB.db["users"].update_one(
+                {"_id": ObjectId(uuid)}, {"$set": {"current_partner": None}}
+            )
+            newDB.score(uuid)
+            newDB.score(str(partner["_id"]))
+            return {"status": "success", "message": "answers are equivalent"}
+        elif partner["current_answer"].lower() != submission.lower():
+            # set both current_answers to None, and return {"status":"success","message": "mismatched answers, put in the same answer as partner"}
+            newDB.db["users"].update_one(
+                {"_id": ObjectId(uuid)}, {"$set": {"current_answer": None}}
+            )
+            newDB.db["users"].update_one(
+                {"_id": partner["_id"]}, {"$set": {"current_answer": None}}
+            )
+            return {
+                "status": "success",
+                "message": "mismatched answers, put in the same answer as partner",
+            }
+        else:
+            return {
+                "status": "failed",
+                "message": "authenticated fine, but something went wrong after that",
+            }
+    return {"status": "failed", "message": "you at least are still on the endpoint"}
+
+
+@app.route("/api/join-matchmaking/uuid=<uuid>/passhash=<passhash>")
+def join_match_making(uuid, passhash):
+    global queue
+    print(queue)
+    if newDB.req_auth(uuid, passhash):
+        print("join match auth success")
+        user = newDB.db["users"].find_one(ObjectId(uuid))
+        partner_history = user["partner_history"]
+        # (uuid, partner_history)
+        if (ObjectId(uuid), partner_history) not in queue and user[
+            "current_partner"
+        ] == None:
+            print("not in queue")
+            queue.append((ObjectId(uuid), partner_history))
+            return {"status": "success"}
+    return {"status": "failure"}
+
+
+def clear_all_partner_hists():
+    newDB.db.users.update_many({}, {"$pop": {"partner_history": 1}})
+    newDB.db.users.update_many({}, {"$set": {"current_partner": None}})
+    newDB.db.users.update_many({}, {"$set": {"current_prompt": None}})
+
+
+@app.route("/api/cancel-match/uuid=<uuid>/passhash=<passhash>")
+def cancel_match(uuid, passhash):
+    # remove from partner history
+    if newDB.req_auth(uuid, passhash):
+        user = newDB.db["users"].find_one({"_id": ObjectId(uuid)})
+        prev_partner = user["current_partner"]
+        newDB.db.users.update_one(
+            {"_id": ObjectId(uuid)}, {"$set": {"current_partner": None}}
+        )
+        newDB.db.users.update_one(
+            {"_id": ObjectId(uuid)}, {"$set": {"current_prompt": None}}
+        )
+        newDB.db.users.update_one(
+            {"_id": ObjectId(uuid)}, {"$pop": {"partner_history": 1}}
+        )
+        newDB.db.users.update_one(
+            {"_id": ObjectId(prev_partner)}, {"$set": {"current_partner": None}}
+        )
+        newDB.db.users.update_one(
+            {"_id": ObjectId(prev_partner)}, {"$set": {"current_prompt": None}}
+        )
+        newDB.db.users.update_one(
+            {"_id": ObjectId(prev_partner)}, {"$pop": {"partner_history": 1}}
+        )
+        return {"status": "success"}
+    return {"status": "failed"}
+
+
+from pprint import pprint
+
+
+@app.route("/api/current-match-info/uuid=<uuid>")
+def current_match_info(uuid):
+    global queue
+    print("queue = ", queue)
+    """
+    make matches in here
+
+    will give current info on match
+    """
+    print("making match")
+    try:
+        make_match()
+    except Exception as e:
+        print(e)
+    user = newDB.db.users.find_one({"_id": ObjectId(uuid)})
+    # for some reason match
+    if user["current_partner"] != None:
+        partner = newDB.db.users.find_one({"_id": user["current_partner"]})
+        return {
+            "status": "success",
+            "matched": True if user["current_partner"] != None else False,
+            "current_partner_uuid": str(user["current_partner"]),
+            "current_partner_name": str(partner["name"]),
+            "current_prompt": str(user["current_prompt"]),
+        }
+    else:
+        return {
+            "status": "success",
+            "matched": True if user["current_partner"] != None else False,
+            "current_partner_uuid": None,
+            "current_partner_name": None,
+            "current_prompt": None,
+        }
+
+
+"""
+UNCOMMENT ME!!!!!!!
+
+@app.errorhandler(Exception)
+def error_handled(e):
+    return {"status": "failed"}
+"""
+
+
+@app.route(
+    "/api/moderator-remove-post/mod-uuid=<uuid>/passhash=<passhash>/sub_id=<sub_id>"
+)
+def mod_remove_post(uuid, passhash, sub_id):
+    if newDB.req_auth(uuid, passhash):
+        newDB.moderator_remove_submission(uuid, sub_id)
+        return {"status": "success"}
+    return {"status": "failure", "message": "you are not a moderator, fuck off"}
+
+
+@app.route("/api/login/email=<email>/passhash=<passhash>")
+def login(email, passhash):
+    return newDB.login(email, passhash)
+
+
+@app.route("/api/submission-feed")
+def submission_feed():
+    return jsonify(
+        {"status": "success", "submission_feed": newDB.get_submission_feed()}
+    )
+
+
+@app.route("/api/like-submission/uuid=<uuid>/passhash=<passhash>/subid=<subid>")
+def like_submission(uuid, passhash, subid):
+    if newDB.req_auth(uuid, passhash):
+        newDB.like_submission(newDB.db, uuid, subid)
+        return {"status": "success"}
+    return {"status": "failure"}
+
+
+@app.route("/api/dislike-submission/uuid=<uuid>/passhash=<passhash>/subid=<subid>")
+def dislike_submission(uuid, passhash, subid):
+    if newDB.req_auth(uuid, passhash):
+        newDB.dislike_submission(newDB.db, uuid, subid)
+        return {"status": "success"}
+    return {"status": "failure"}
+
+
+@app.route("/api/unlike-submission/uuid=<uuid>/passhash=<passhash>/subid=<subid>")
+def unlike_submission(uuid, passhash, subid):
+    if newDB.req_auth(uuid, passhash):
+        newDB.unlike_submission(newDB.db, uuid, subid)
+        return {"status": "success"}
+    return {"status": "failure"}
+
+
+@app.route("/api/undislike-submission/uuid=<uuid>/passhash=<passhash>/subid=<subid>")
+def undislike_submission(uuid, passhash, subid):
+    if newDB.req_auth(uuid, passhash):
+        newDB.un_dislike_submission(newDB.db, uuid, subid)
+        return {"status": "success"}
+    return {"status": "failure"}
 
 
 # get_leaderboard -> [{"name1", score}, {"name2", score}]
 @app.route("/api/leaderboard")
 def leaderboard():
-    return {"leaderboard": db.get_leaderboard()}
+    return {"status": "success", "leaderboard": newDB.get_leaderboard()}
 
 
 # submit: if on 14th or less node then returns
@@ -29,23 +361,12 @@ def leaderboard():
   "status": "success"
 }
 """
-# if on 15th node then returns
-# {"status" : "completed"}
-@app.route("/api/submit/uuid=<uuid>/passhash=<passhash>/code=<code>")
-def submit_code(uuid, code, passhash):
-    return db.handle_code(uuid, code)
-
-
-# login (email) -> ObjectId #remember to index on email, as well to make login fast!
-@app.route("/api/login/email=<email>/passhash=<passhash>")
-def login(email, passhash):
-    return db.login(email, passhash)
 
 
 # clues for current-location (uuid) -> (clue1, clue2), hat_links
 @app.route("/api/current-clues/uuid=<uuid>, passhash=<passhash>")
 def current_clues(uuid, passhash):
-    return db.current_clues(uuid)
+    return newDB.current_clues(uuid)
 
 
 # hat_links: returns
@@ -63,20 +384,13 @@ def current_clues(uuid, passhash):
 @app.route("/api/hats/uuid=<uuid>,passhash=<passhash>")
 def hats(uuid, passhash):
     # is passhash necessary for this function???
-    return db.get_hats(uuid)
+    return newDB.get_hats(uuid)
 
 
 # rank-and-farthest: returns {"_id": id, "rank": rank, "farthest":nodes_reached}
-@app.route("/api/rank-and-farthest/uuid=<uuid>")
+@app.route("/api/rank/uuid=<uuid>")
 def rank(uuid):
-    return db.get_rank_and_farthest(uuid)
-
-
-# utc time "start" +3 minutes
-@app.route("/api/clue2-time/uuid=<uuid>")
-def clue2_time(uuid):
-    # may be obsolete??
-    return db.clue2_time(uuid)
+    return newDB.get_rank(uuid)
 
 
 # house points count
@@ -88,7 +402,7 @@ def house_points():
 # sends helpline (Angie's phone number) and the end time of the game
 @app.route("/api/game-info")
 def game_info():
-    return db.get_game_info()
+    return newDB.get_game_info()
 
 
 @app.errorhandler(Exception)
