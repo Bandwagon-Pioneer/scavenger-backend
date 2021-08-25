@@ -218,7 +218,6 @@ def get_game_info():
     endtime = db.endtime.find_one({})
     return {
         "status": "success",
-        "helpline": "765-586-3986",
         "endtime": "The End of Band Camp",
     }
 
